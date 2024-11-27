@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,7 +7,6 @@ import {
   Settings,
   Bell,
   BarChart2,
-  Megaphone,
   Shield,
   FileText
 } from 'lucide-react';
@@ -20,7 +18,6 @@ const Sidebar = () => {
     { icon: Package, label: 'Products', path: '/products' },
     { icon: ShoppingBag, label: 'Orders', path: '/orders' },
     { icon: BarChart2, label: 'Analytics', path: '/analytics' },
-    { icon: Megaphone, label: 'Marketing', path: '/marketing' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: Shield, label: 'Security', path: '/security' },
     { icon: FileText, label: 'Audit Logs', path: '/audit-logs' },

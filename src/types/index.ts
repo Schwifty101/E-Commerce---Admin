@@ -6,6 +6,7 @@ export interface User {
   status: 'active' | 'pending' | 'banned';
   createdAt: string;
   lastLogin: string;
+  token?: string;
 }
 
 export interface Product {
