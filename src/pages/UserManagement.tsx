@@ -2,71 +2,88 @@ import React from 'react';
 import { User } from '../types';
 import UserList from '../components/users/UserList';
 import UserForm from '../components/users/UserForm';
+import UserActions from '../components/users/UserActions';
 import Modal from '../components/common/Modal';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
-
-// Mock data for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'buyer',
-    status: 'active',
-    createdAt: '2024-03-01T00:00:00Z',
-    lastLogin: '2024-03-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: 'seller',
-    status: 'pending',
-    createdAt: '2024-03-10T00:00:00Z',
-    lastLogin: '2024-03-14T15:45:00Z',
-  },
-];
+import { userService } from '../services/userService';
 
 const UserManagement = () => {
-  const [users, setUsers] = React.useState<User[]>(mockUsers);
+  const [users, setUsers] = React.useState<User[]>([]);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleCreateUser = (userData: Partial<User>) => {
-    const newUser: User = {
-      id: uuidv4(),
-      ...userData,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    } as User;
-
-    setUsers([...users, newUser]);
-    setIsModalOpen(false);
-    toast.success('User created successfully');
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const data = await userService.getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      toast.error('Failed to fetch users');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleUpdateUser = (userData: Partial<User>) => {
+  React.useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleUpdateUser = async (userData: Partial<User>) => {
     if (!selectedUser) return;
 
-    const updatedUsers = users.map((user) =>
-      user.id === selectedUser.id ? { ...user, ...userData } : user
-    );
-
-    setUsers(updatedUsers);
-    setSelectedUser(null);
-    setIsModalOpen(false);
-    toast.success('User updated successfully');
+    try {
+      await userService.updateUser(selectedUser.id, userData);
+      await fetchUsers();
+      setSelectedUser(null);
+      setIsModalOpen(false);
+      toast.success('User updated successfully');
+    } catch (error) {
+      toast.error('Failed to update user');
+    }
   };
 
-  const handleUserClick = (user: User) => {
-    setSelectedUser(user);
-    setIsModalOpen(true);
+  const handleStatusChange = async (userId: string, newStatus: string) => {
+    try {
+      if (newStatus === 'active') {
+        await userService.approveUser(userId);
+      } else if (newStatus === 'banned') {
+        await userService.banUser(userId);
+      }
+      await fetchUsers();
+      toast.success(`User status updated to ${newStatus}`);
+    } catch (error) {
+      toast.error('Failed to update user status');
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await userService.deleteUser(userId);
+        await fetchUsers();
+        toast.success('User deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete user');
+      }
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+      await userService.initiatePasswordReset(user.email);
+      toast.success('Password reset email sent');
+    } catch (error) {
+      toast.error('Failed to send password reset email');
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">User Management</h1>
         <button
@@ -81,7 +98,22 @@ const UserManagement = () => {
         </button>
       </div>
 
-      <UserList users={users} onUserClick={handleUserClick} />
+      {isLoading ? (
+        <div className="text-center py-4">Loading...</div>
+      ) : (
+        <UserList 
+          users={users} 
+          onUserClick={setSelectedUser}
+          actions={(user) => (
+            <UserActions
+              user={user}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+              onResetPassword={handleResetPassword}
+            />
+          )}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -93,7 +125,7 @@ const UserManagement = () => {
       >
         <UserForm
           user={selectedUser || undefined}
-          onSubmit={selectedUser ? handleUpdateUser : handleCreateUser}
+          onSubmit={handleUpdateUser}
           onCancel={() => {
             setIsModalOpen(false);
             setSelectedUser(null);

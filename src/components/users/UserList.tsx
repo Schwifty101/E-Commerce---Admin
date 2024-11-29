@@ -6,9 +6,10 @@ import { format } from 'date-fns';
 interface UserListProps {
   users: User[];
   onUserClick: (user: User) => void;
+  actions: (user: User) => React.ReactNode;
 }
 
-const UserList: React.FC<UserListProps> = ({ users, onUserClick }) => {
+const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
   const columns = React.useMemo(
     () => [
       {
@@ -50,6 +51,10 @@ const UserList: React.FC<UserListProps> = ({ users, onUserClick }) => {
         accessor: 'lastLogin',
         Cell: ({ value }: { value: string }) => format(new Date(value), 'MMM dd, yyyy HH:mm'),
       },
+      {
+        Header: 'Actions',
+        Cell: ({ row }: { row: { original: User } }) => actions(row.original)
+      }
     ],
     []
   );

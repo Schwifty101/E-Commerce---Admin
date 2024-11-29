@@ -2,11 +2,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'sub-admin' | 'seller' | 'buyer';
-  status: 'active' | 'pending' | 'banned';
+  role: 'buyer' | 'seller' | 'admin';
+  status: 'pending' | 'active' | 'banned';
+  isApproved: boolean;
+  isBanned: boolean;
   createdAt: string;
-  lastLogin: string;
-  token?: string;
+  lastLogin?: string;
 }
 
 export interface Product {
