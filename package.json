@@ -30,6 +30,7 @@
     "cors": "^2.8.5",
     "date-fns": "^3.3.1",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express-mongo-sanitize": "^2.2.0",
     "lucide-react": "^0.344.0",
     "mongoose": "^8.8.3",
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "@types/cors": "^2.8.17",
+    "@types/exceljs": "^0.5.3",
     "@types/express-session": "^1.18.1",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.5",

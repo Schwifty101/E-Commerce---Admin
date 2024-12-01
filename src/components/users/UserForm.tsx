@@ -13,12 +13,43 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onCancel }) => {
     email: user?.email || '',
     role: user?.role || 'buyer',
     status: user?.status || 'pending',
+    businessDetails: user?.businessDetails || {
+      companyName: '',
+      registrationNumber: '',
+      address: '',
+      phone: '',
+      verificationDocuments: [],
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
+
+  const renderSellerFields = () => (
+    formData.role === 'seller' && (
+      <div className="space-y-4">
+        <h3 className="font-medium text-gray-900">Business Details</h3>
+        <div>
+          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+            Company Name
+          </label>
+          <input
+            type="text"
+            id="companyName"
+            value={formData.businessDetails.companyName}
+            onChange={(e) => setFormData({
+              ...formData,
+              businessDetails: { ...formData.businessDetails, companyName: e.target.value }
+            })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        {/* Add other business fields similarly */}
+      </div>
+    )
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,6 +113,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onCancel }) => {
           <option value="banned">Banned</option>
         </select>
       </div>
+
+      {renderSellerFields()}
 
       <div className="flex justify-end space-x-3 mt-6">
         <button

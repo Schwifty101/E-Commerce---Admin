@@ -1,17 +1,14 @@
 import { API_BASE_URL } from '../config';
 
-export interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
 export const authService = {
-  login: async (credentials: LoginCredentials) => {
+  login: async (username: string, password: string) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(credentials),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
     });
 
     if (!response.ok) {
@@ -27,7 +24,7 @@ export const authService = {
       method: 'POST',
       credentials: 'include',
     });
-
+    
     if (!response.ok) {
       throw new Error('Logout failed');
     }
@@ -39,9 +36,9 @@ export const authService = {
     });
 
     if (!response.ok) {
-      throw new Error('Authentication check failed');
+      throw new Error('Not authenticated');
     }
 
     return response.json();
-  },
+  }
 }; 

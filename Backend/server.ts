@@ -7,10 +7,11 @@ import Admin, { IAdmin } from './Models/Admin';
 import dotenv from 'dotenv';
 import authRoutes from './Routes/auth';
 import dashboardRoutes from './Routes/dashboard';
-// import userRoutes from './Routes/users';
+import userRoutes from './Routes/users';
 // import productRoutes from './Routes/products';
 // import orderRoutes from './Routes/orders';
 import cors from 'cors';
+import MongoStore from 'connect-mongo';
 
 dotenv.config();
 
@@ -38,10 +39,13 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,
-    maxAge: 1000 * 60 * 60 * 24,
-    sameSite: 'lax'
-  }
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  },
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI
+  })
 }));
 
 // Passport configuration
@@ -68,7 +72,7 @@ mongoose.connect(process.env.MONGODB_URI!)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-// app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes);
 // app.use('/api/products', productRoutes);
 // app.use('/api/orders', orderRoutes);
 

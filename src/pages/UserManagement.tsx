@@ -44,7 +44,7 @@ const UserManagement = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: string) => {
+  const handleStatusChange = React.useCallback(async (userId: string, newStatus: string) => {
     try {
       if (newStatus === 'active') {
         await userService.approveUser(userId);
@@ -56,9 +56,9 @@ const UserManagement = () => {
     } catch (error) {
       toast.error('Failed to update user status');
     }
-  };
+  }, []);
 
-  const handleDelete = async (userId: string) => {
+  const handleDelete = React.useCallback(async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await userService.deleteUser(userId);
@@ -68,9 +68,9 @@ const UserManagement = () => {
         toast.error('Failed to delete user');
       }
     }
-  };
+  }, []);
 
-  const handleResetPassword = async (userId: string) => {
+  const handleResetPassword = React.useCallback(async (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
@@ -80,7 +80,18 @@ const UserManagement = () => {
     } catch (error) {
       toast.error('Failed to send password reset email');
     }
-  };
+  }, [users]);
+
+  const renderActions = React.useCallback((user: User) => {
+    return (
+      <UserActions
+        user={user}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDelete}
+        onResetPassword={handleResetPassword}
+      />
+    );
+  }, [handleStatusChange, handleDelete, handleResetPassword]);
 
   return (
     <div className="space-y-6 p-6">
@@ -104,14 +115,7 @@ const UserManagement = () => {
         <UserList 
           users={users} 
           onUserClick={setSelectedUser}
-          actions={(user) => (
-            <UserActions
-              user={user}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDelete}
-              onResetPassword={handleResetPassword}
-            />
-          )}
+          actions={renderActions}
         />
       )}
 

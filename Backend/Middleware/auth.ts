@@ -14,14 +14,26 @@ export const isAuthenticated: RequestHandler = (req, res, next): void => {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ message: 'Please log in first' });
-  return;
+  res.status(401).json({ 
+    message: 'Authentication required',
+    code: 'AUTH_REQUIRED'
+  });
 };
 
 export const isAdmin: RequestHandler = (req, res, next): void => {
-  if (req.isAuthenticated() && req.user && (req.user as any).isAdmin) {
-    return next();
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ 
+      message: 'Authentication required',
+      code: 'AUTH_REQUIRED'
+    });
   }
-  res.status(403).json({ message: 'Access denied' });
-  return;
+  
+  if (!(req.user as any).isAdmin) {
+    res.status(403).json({ 
+      message: 'Admin privileges required',
+      code: 'ADMIN_REQUIRED'
+    });
+  }
+  
+  next();
 };

@@ -4,10 +4,28 @@ export interface User {
   email: string;
   role: 'buyer' | 'seller' | 'admin';
   status: 'pending' | 'active' | 'banned';
-  isApproved: boolean;
-  isBanned: boolean;
   createdAt: string;
-  lastLogin?: string;
+  lastLogin: string;
+  // Seller specific fields
+  businessDetails?: {
+    companyName: string;
+    registrationNumber: string;
+    address: string;
+    phone: string;
+    verificationDocuments: string[];
+  };
+  // Metrics
+  performanceMetrics?: {
+    rating: number;
+    totalSales: number;
+    completionRate: number;
+  };
+  // Buyer specific fields
+  purchaseHistory?: {
+    totalOrders: number;
+    totalSpent: number;
+    lastPurchase: string;
+  };
 }
 
 export interface Product {

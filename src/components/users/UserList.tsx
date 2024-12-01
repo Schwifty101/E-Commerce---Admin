@@ -56,7 +56,7 @@ const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
         Cell: ({ row }: { row: { original: User } }) => actions(row.original)
       }
     ],
-    []
+    [actions]
   );
 
   return <Table columns={columns} data={users} onRowClick={onUserClick} />;

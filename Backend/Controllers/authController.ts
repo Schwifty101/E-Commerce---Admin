@@ -1,6 +1,5 @@
 import { Request, Response, RequestHandler } from 'express';
 import passport from 'passport';
-import Admin from '../Models/Admin';
 
 export const login: RequestHandler = (req, res) => {
   passport.authenticate('local', (err: any, user: any, info: any) => {
