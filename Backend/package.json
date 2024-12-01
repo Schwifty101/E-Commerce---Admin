@@ -7,7 +7,8 @@
     "start": "node dist/server.js",
     "dev": "nodemon --exec ts-node server.ts",
     "build": "tsc",
-    "create-admin": "ts-node scripts/createAdmin.ts"
+    "create-admin": "ts-node seeds/createAdmin.ts",
+    "seed-users": "ts-node seeds/userSeeder.ts"
   },
   "keywords": [],
   "author": "",

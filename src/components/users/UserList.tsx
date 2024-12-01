@@ -1,7 +1,8 @@
 import React from 'react';
+import { format, isValid, parseISO } from 'date-fns';
 import { User } from '../../types';
 import Table from '../common/Table';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/dateUtils';
 
 interface UserListProps {
   users: User[];
@@ -44,12 +45,16 @@ const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
       {
         Header: 'Created At',
         accessor: 'createdAt',
-        Cell: ({ value }: { value: string }) => format(new Date(value), 'MMM dd, yyyy'),
+        Cell: ({ value }: { value: string }) => formatDate(value),
       },
       {
         Header: 'Last Login',
         accessor: 'lastLogin',
-        Cell: ({ value }: { value: string }) => format(new Date(value), 'MMM dd, yyyy HH:mm'),
+        Cell: ({ value }: { value: string }) => {
+          if (!value) return '-';
+          const date = parseISO(value);
+          return isValid(date) ? format(date, 'MMM dd, yyyy HH:mm') : 'Invalid date';
+        }
       },
       {
         Header: 'Actions',

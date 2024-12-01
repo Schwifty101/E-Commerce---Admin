@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import { sendPasswordResetEmail } from '../utils/email';
 import { createExcelWorkbook } from '../utils/excel';
+import { createUserSchema } from '../utils/validation';
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -54,7 +55,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User deleted successfully' });
+    res.status(200).json({ message: 'User deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting user' });
   }
@@ -113,5 +114,33 @@ export const exportUserList = async (req: Request, res: Response) => {
     res.end();
   } catch (error) {
     res.status(500).json({ message: 'Error exporting user list' });
+  }
+};
+
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    // Validate input
+    const { error, value } = createUserSchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0].message });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: value.email });
+    if (existingUser) {
+      res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Create user
+    const user = new User(value);
+    await user.save();
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete (userResponse as any).password;
+
+    res.status(201).json(userResponse);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating user' });
   }
 }; 

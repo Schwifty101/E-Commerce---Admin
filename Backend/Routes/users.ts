@@ -10,6 +10,7 @@ router.put('/:id', isAuthenticated, isAdmin, userController.updateUser);
 router.post('/:id/approve', isAuthenticated, isAdmin, userController.approveUser);
 router.post('/:id/ban', isAuthenticated, isAdmin, userController.banUser);
 router.delete('/:id', isAuthenticated, isAdmin, userController.deleteUser);
+router.post('/', isAuthenticated, isAdmin, userController.createUser);
 
 // Seller routes
 router.get('/sellers/pending', isAuthenticated, isAdmin, userController.getSellerVerifications);
