@@ -13,11 +13,14 @@ router.delete('/:id', isAuthenticated, isAdmin, userController.deleteUser);
 router.post('/', isAuthenticated, isAdmin, userController.createUser);
 
 // Seller routes
-router.get('/sellers/pending', isAuthenticated, isAdmin, userController.getSellerVerifications);
-router.post('/sellers/:id/approve', isAuthenticated, isAdmin, userController.approveSellerApplication);
+router.get('/sellers', isAuthenticated, isAdmin, userController.getSellers);
+router.get('/sellers/pending', isAuthenticated, isAdmin, userController.getPendingSellers);
+router.post('/sellers/:id/verify', isAuthenticated, isAdmin, userController.verifySeller);
 
 // Buyer routes
-router.get('/buyers/:id/stats', isAuthenticated, userController.getBuyerStats);
+router.get('/buyers', isAuthenticated, isAdmin, userController.getBuyers);
+router.get('/buyers/pending', isAuthenticated, isAdmin, userController.getPendingBuyers);
+router.post('/buyers/:id/verify', isAuthenticated, isAdmin, userController.verifyBuyer);
 
 // Export route
 router.post('/export', isAuthenticated, isAdmin, userController.exportUserList);

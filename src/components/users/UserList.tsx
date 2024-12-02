@@ -11,6 +11,8 @@ interface UserListProps {
 }
 
 const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
+  const filteredUsers = users.filter(user => user.role !== 'admin');
+
   const columns = React.useMemo(
     () => [
       {
@@ -57,6 +59,30 @@ const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
         }
       },
       {
+        Header: 'Verification Status',
+        accessor: 'verificationStatus',
+        Cell: ({ value }: { value: string }) => (
+          <span
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+              ${value === 'approved' ? 'bg-green-100 text-green-800' :
+              value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'}`}
+          >
+            {value}
+          </span>
+        ),
+      },
+      {
+        Header: 'Business Details',
+        accessor: 'businessDetails',
+        Cell: ({ row }: { row: { original: User } }) => 
+          row.original.role === 'seller' ? (
+            <span className="text-sm text-gray-600">
+              {row.original.businessDetails?.companyName || '-'}
+            </span>
+          ) : null
+      },
+      {
         Header: 'Actions',
         Cell: ({ row }: { row: { original: User } }) => actions(row.original)
       }
@@ -64,7 +90,7 @@ const UserList: React.FC<UserListProps> = ({ users, onUserClick, actions }) => {
     [actions]
   );
 
-  return <Table columns={columns} data={users} onRowClick={onUserClick} />;
+  return <Table columns={columns} data={filteredUsers} onRowClick={onUserClick} />;
 };
 
 export default UserList;

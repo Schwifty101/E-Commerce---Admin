@@ -11,14 +11,15 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onCancel }) => {
   const [formData, setFormData] = React.useState({
     name: user?.name || '',
     email: user?.email || '',
-    role: user?.role || 'buyer',
-    status: user?.status || 'pending',
+    role: (user?.role || 'buyer') as 'buyer' | 'seller',
+    verificationStatus: user?.verificationStatus || 'pending',
     businessDetails: user?.businessDetails || {
       companyName: '',
       registrationNumber: '',
       address: '',
       phone: '',
       verificationDocuments: [],
+      verified: false
     },
   });
 
@@ -88,28 +89,26 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onCancel }) => {
         <select
           id="role"
           value={formData.role}
-          onChange={(e) => setFormData({ ...formData, role: e.target.value as User['role'] })}
+          onChange={(e) => setFormData({ ...formData, role: e.target.value as 'buyer' | 'seller' })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
           <option value="buyer">Buyer</option>
           <option value="seller">Seller</option>
-          <option value="sub-admin">Sub-admin</option>
-          <option value="admin">Admin</option>
         </select>
       </div>
 
       <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-          Status
+        <label htmlFor="Verification Status" className="block text-sm font-medium text-gray-700">
+          Verification Status
         </label>
         <select
-          id="status"
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value as User['status'] })}
+          id="Verification Status"
+          value={formData.verificationStatus}
+          onChange={(e) => setFormData({ ...formData, verificationStatus: e.target.value as User['verificationStatus'] })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
           <option value="pending">Pending</option>
-          <option value="active">Active</option>
+          <option value="approved">Approved</option>
           <option value="banned">Banned</option>
         </select>
       </div>

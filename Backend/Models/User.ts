@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -34,10 +33,38 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  businessDetails: {
+    companyName: String,
+    registrationNumber: String,
+    address: String,
+    phone: String,
+    verificationDocuments: [String],
+    verified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  lastLogin: Date,
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'active', 'banned'],
+    default: 'pending',
+    validate: {
+      validator: function(this: any, status: string) {
+        // Admin is always active and can't be banned/pending
+        return this.role === 'admin' ? status === 'active' : true;
+      },
+      message: 'Admin status must be active'
+    }
   }
-}, { 
+}, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     getters: true,
     transform: (doc, ret) => {
       ret.id = ret._id;

@@ -32,7 +32,7 @@ const UserActions: React.FC<UserActionsProps> = ({
 
   return (
     <div className="space-x-2">
-      {user.status === 'pending' && (
+      {user.verificationStatus === 'pending' && (
         <button
           onClick={handleApprove}
           className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
@@ -40,8 +40,8 @@ const UserActions: React.FC<UserActionsProps> = ({
           Approve
         </button>
       )}
-      
-      {user.status !== 'banned' && (
+
+      {user.verificationStatus !== 'rejected' && (
         <button
           onClick={handleBan}
           className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
@@ -49,14 +49,14 @@ const UserActions: React.FC<UserActionsProps> = ({
           Ban
         </button>
       )}
-      
+
       <button
         onClick={handleResetPassword}
         className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
       >
         Reset Password
       </button>
-      
+
       <button
         onClick={() => onDelete(user.id)}
         className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"

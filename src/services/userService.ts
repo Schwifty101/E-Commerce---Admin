@@ -83,4 +83,54 @@ export const userService = {
     });
     return response.blob();
   },
+  getSellers: async (): Promise<User[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/sellers`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch sellers');
+    return response.json();
+  },
+  getPendingSellers: async (): Promise<User[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/sellers/pending`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch pending sellers');
+    return response.json();
+  },
+  verifySeller: async (sellerId: string, approved: boolean): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/sellers/${sellerId}/verify`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved })
+    });
+    if (!response.ok) throw new Error('Failed to verify seller');
+  },
+  getBuyers: async (): Promise<User[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/buyers`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch buyers');
+    return response.json();
+  },
+  getPendingBuyers: async (): Promise<User[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/buyers/pending`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Failed to fetch pending buyers');
+    return response.json();
+  },
+  verifyBuyer: async (buyerId: string, approved: boolean): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/buyers/${buyerId}/verify`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved })
+    });
+    if (!response.ok) throw new Error('Failed to verify buyer');
+  }
 };

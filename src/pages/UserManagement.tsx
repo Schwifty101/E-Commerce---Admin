@@ -4,21 +4,51 @@ import UserList from '../components/users/UserList';
 import UserForm from '../components/users/UserForm';
 import UserActions from '../components/users/UserActions';
 import Modal from '../components/common/Modal';
-import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { userService } from '../services/userService';
+import SellerVerification from '../components/users/SellerVerification';
 
 const UserManagement = () => {
+  const [activeTab, setActiveTab] = React.useState<'all' | 'sellers' | 'buyers'>('all');
+  const [pendingVerifications, setPendingVerifications] = React.useState<Record<string, number>>({
+    sellers: 0,
+    buyers: 0
+  });
   const [users, setUsers] = React.useState<User[]>([]);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const fetchUsers = async () => {
+  const fetchPendingVerifications = async () => {
     try {
-      setIsLoading(true);
-      const data = await userService.getAllUsers();
-      setUsers(data);
+      const [pendingSellers, pendingBuyers] = await Promise.all([
+        userService.getPendingSellers(),
+        userService.getPendingBuyers()
+      ]);
+      setPendingVerifications({
+        sellers: pendingSellers.length,
+        buyers: pendingBuyers.length
+      });
+    } catch (error) {
+      toast.error('Failed to fetch pending verifications');
+    }
+  };
+
+  const fetchUsersByType = async () => {
+    setIsLoading(true);
+    try {
+      let fetchedUsers;
+      switch (activeTab) {
+        case 'sellers':
+          fetchedUsers = await userService.getSellers();
+          break;
+        case 'buyers':
+          fetchedUsers = await userService.getBuyers();
+          break;
+        default:
+          fetchedUsers = await userService.getAllUsers();
+      }
+      setUsers(fetchedUsers);
     } catch (error) {
       toast.error('Failed to fetch users');
     } finally {
@@ -27,15 +57,16 @@ const UserManagement = () => {
   };
 
   React.useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsersByType();
+    fetchPendingVerifications();
+  }, [activeTab]);
 
   const handleUpdateUser = async (userData: Partial<User>) => {
     if (!selectedUser) return;
 
     try {
       await userService.updateUser(selectedUser.id, userData);
-      await fetchUsers();
+      await fetchUsersByType();
       setSelectedUser(null);
       setIsModalOpen(false);
       toast.success('User updated successfully');
@@ -44,25 +75,30 @@ const UserManagement = () => {
     }
   };
 
-  const handleStatusChange = React.useCallback(async (userId: string, newStatus: string) => {
+  const handleVerification = async (userId: string, approved: boolean) => {
     try {
-      if (newStatus === 'active') {
-        await userService.approveUser(userId);
-      } else if (newStatus === 'banned') {
-        await userService.banUser(userId);
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+
+      if (user.role === 'seller') {
+        await userService.verifySeller(userId, approved);
+      } else {
+        await userService.verifyBuyer(userId, approved);
       }
-      await fetchUsers();
-      toast.success(`User status updated to ${newStatus}`);
+      
+      await fetchUsersByType();
+      await fetchPendingVerifications();
+      toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
     } catch (error) {
-      toast.error('Failed to update user status');
+      toast.error('Failed to verify user');
     }
-  }, []);
+  };
 
   const handleDelete = React.useCallback(async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await userService.deleteUser(userId);
-        await fetchUsers();
+        await fetchUsersByType();
         toast.success('User deleted successfully');
       } catch (error) {
         toast.error('Failed to delete user');
@@ -82,31 +118,34 @@ const UserManagement = () => {
     }
   }, [users]);
 
-  const renderActions = React.useCallback((user: User) => {
-    return (
-      <UserActions
-        user={user}
-        onStatusChange={handleStatusChange}
-        onDelete={handleDelete}
-        onResetPassword={handleResetPassword}
-      />
-    );
-  }, [handleStatusChange, handleDelete, handleResetPassword]);
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">User Management</h1>
-        <button
-          onClick={() => {
-            setSelectedUser(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add User
-        </button>
+      </div>
+
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {['all', 'sellers', 'buyers'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as typeof activeTab)}
+              className={`
+                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                ${activeTab === tab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+              `}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab !== 'all' && pendingVerifications[tab as keyof typeof pendingVerifications] > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                  {pendingVerifications[tab as keyof typeof pendingVerifications]}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {isLoading ? (
@@ -114,8 +153,18 @@ const UserManagement = () => {
       ) : (
         <UserList 
           users={users} 
-          onUserClick={setSelectedUser}
-          actions={renderActions}
+          onUserClick={(user) => {
+            setSelectedUser(user);
+            setIsModalOpen(true);
+          }}
+          actions={(user) => (
+            <UserActions
+              user={user}
+              onStatusChange={(userId, newStatus) => handleVerification(userId, newStatus === 'approved')}
+              onDelete={handleDelete}
+              onResetPassword={handleResetPassword}
+            />
+          )}
         />
       )}
 
@@ -127,14 +176,22 @@ const UserManagement = () => {
         }}
         title={selectedUser ? 'Edit User' : 'Create User'}
       >
-        <UserForm
-          user={selectedUser || undefined}
-          onSubmit={handleUpdateUser}
-          onCancel={() => {
-            setIsModalOpen(false);
-            setSelectedUser(null);
-          }}
-        />
+        {selectedUser?.verificationStatus === 'pending' ? (
+          <SellerVerification
+            seller={selectedUser}
+            onApprove={(id: string) => handleVerification(id, true)}
+            onReject={(id: string) => handleVerification(id, false)}
+          />
+        ) : (
+          <UserForm
+            user={selectedUser || undefined}
+            onSubmit={handleUpdateUser}
+            onCancel={() => {
+              setIsModalOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+        )}
       </Modal>
     </div>
   );

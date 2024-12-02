@@ -3,24 +3,26 @@ export interface User {
   name: string;
   email: string;
   role: 'buyer' | 'seller' | 'admin';
-  status: 'pending' | 'active' | 'banned';
+  isApproved: boolean;
+  isBanned: boolean;
   createdAt: string;
-  lastLogin: string;
-  // Seller specific fields
+  updatedAt: string;
+  lastLogin?: string;
+  verificationStatus: 'pending' | 'approved' | 'rejected';
   businessDetails?: {
     companyName: string;
     registrationNumber: string;
     address: string;
     phone: string;
     verificationDocuments: string[];
+    verified: boolean;
   };
-  // Metrics
+  // Optional fields not in schema but used in frontend
   performanceMetrics?: {
     rating: number;
     totalSales: number;
     completionRate: number;
   };
-  // Buyer specific fields
   purchaseHistory?: {
     totalOrders: number;
     totalSpent: number;

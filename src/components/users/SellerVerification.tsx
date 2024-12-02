@@ -23,7 +23,10 @@ const SellerVerification: React.FC<SellerVerificationProps> = ({
               <dt className="text-sm text-gray-500">Company Name</dt>
               <dd className="text-sm text-gray-900">{seller.businessDetails?.companyName}</dd>
             </div>
-            {/* Add other business details */}
+            <div>
+              <dt className="text-sm text-gray-500">Registration Number</dt>
+              <dd className="text-sm text-gray-900">{seller.businessDetails?.registrationNumber}</dd>
+            </div>
           </dl>
         </div>
         

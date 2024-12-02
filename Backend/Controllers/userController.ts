@@ -143,4 +143,89 @@ export const createUser = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ message: 'Error creating user' });
   }
-}; 
+};
+
+export const getSellers = async (req: Request, res: Response) => {
+  try {
+    const sellers = await User.find({ role: 'seller' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    res.json(sellers);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching sellers' });
+  }
+};
+
+export const getPendingSellers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const pendingSellers = await User.find({
+      role: 'seller',
+      verificationStatus: 'pending'
+    }).select('-password');
+    res.json(pendingSellers);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching pending sellers' });
+  }
+};
+
+export const verifySeller = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { approved } = req.body;
+    const seller = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        verificationStatus: approved ? 'approved' : 'rejected',
+        'businessDetails.verified': approved
+      },
+      { new: true }
+    );
+    if (!seller) {
+      res.status(404).json({ message: 'Seller not found' });
+      return;
+    }
+    res.json(seller);
+  } catch (error) {
+    res.status(500).json({ message: 'Error verifying seller' });
+  }
+};
+
+export const getBuyers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const buyers = await User.find({ role: 'buyer' }).select('-password');
+    res.json(buyers);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching buyers' });
+  }
+};
+
+export const getPendingBuyers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const pendingBuyers = await User.find({
+      role: 'buyer',
+      verificationStatus: 'pending'
+    }).select('-password');
+    res.json(pendingBuyers);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching pending buyers' });
+  }
+};
+
+export const verifyBuyer = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { approved } = req.body;
+    const buyer = await User.findByIdAndUpdate(
+      req.params.id,
+      { verificationStatus: approved ? 'approved' : 'rejected' },
+      { new: true }
+    );
+    if (!buyer) {
+      res.status(404).json({ message: 'Buyer not found' });
+      return;
+    }
+    res.json(buyer);
+  } catch (error) {
+    res.status(500).json({ message: 'Error verifying buyer' });
+  }
+};
+
+// Similar methods for buyers... 
