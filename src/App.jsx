@@ -32,7 +32,6 @@ const AppContent = () => {
                     <Route path="/products" element={<ProductManagement />} />
                     <Route path="/orders" element={<OrderManagement />} />
                     <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/Meow" element={} />
                   </Routes>
                 </main>
               </div>
