@@ -34,7 +34,34 @@ const productSchema = new mongoose.Schema({
   rejectionReason: String,
   flaggedReasons: [String],
   reports: [reportSchema],
-  actionLogs: [actionLogSchema],
+  actionLogs: [{
+    action: {
+      type: String,
+      enum: [
+        'create', 
+        'update', 
+        'delete', 
+        'approve', 
+        'reject', 
+        'escalate',
+        'status_change',
+        'flag'
+      ],
+      required: true
+    },
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    oldStatus: String,
+    newStatus: String,
+    reason: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

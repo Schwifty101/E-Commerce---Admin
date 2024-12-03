@@ -185,9 +185,12 @@ const takeAction = async (req, res) => {
 // Add this controller function
 const updateProduct = async (req, res) => {
   try {
+    console.log('Update request body:', req.body); // Debug log
+
     // Validate request body
     const { error } = updateProductSchema.validate(req.body);
     if (error) {
+      console.log('Validation error:', error.details); // Debug log
       return res.status(400).json({ 
         message: 'Validation error', 
         details: error.details[0].message 
@@ -197,37 +200,63 @@ const updateProduct = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Find product
+    // Find and update product
     const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    console.log('Current product:', product); // Debug log
+    console.log('Update data:', updateData); // Debug log
+
+    // Track if status changed
+    const statusChanged = updateData.status && updateData.status !== product.status;
+    const oldStatus = product.status;
+
     // Update allowed fields only
     if (updateData.category) product.category = updateData.category;
-    if (updateData.status) {
-      product.status = updateData.status;
+    if (updateData.status) product.status = updateData.status;
+    
+    // Handle reports separately to avoid duplicates
+    if (updateData.reports) {
+      // Only add new reports that don't exist
+      const newReports = updateData.reports.filter(newReport => {
+        return !product.reports.some(existingReport => 
+          existingReport.reason === newReport.reason &&
+          new Date(existingReport.createdAt).getTime() === new Date(newReport.createdAt).getTime()
+        );
+      });
+
+      product.reports.push(...newReports);
+    }
+
+    // Add action log if status changed
+    if (statusChanged) {
       product.actionLogs.push({
-        action: `status_change_to_${updateData.status}`,
+        action: 'update',
         performedBy: req.user._id,
+        oldStatus,
+        newStatus: updateData.status,
+        reason: `Status changed from ${oldStatus} to ${updateData.status}`,
         createdAt: new Date()
       });
-    }
-    if (updateData.reports) {
-      product.reports = updateData.reports;
-    }
 
-    await product.save();
-
-    // If status changed, send notification
-    if (updateData.status && updateData.status !== product.status) {
+      // Send notification for status change
       await sendNotification(product.seller, {
         type: `PRODUCT_${updateData.status.toUpperCase()}`,
         productId: product._id,
-        productName: product.name
+        productName: product.name,
+        oldStatus,
+        newStatus: updateData.status
       });
     }
 
+    // Save the updated product
+    await product.save();
+
+    // Populate seller info before sending response
+    await product.populate('seller', 'name email');
+    
     res.json(product);
   } catch (error) {
     console.error('Error updating product:', error);

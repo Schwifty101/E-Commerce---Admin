@@ -23,7 +23,34 @@ const ProductForm = ({ product, onSubmit, onCancel, isAdmin = false }) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await onSubmit(formData);
+      
+      // Only include fields that have changed and are not empty
+      const updateData = {};
+      
+      if (formData.category && formData.category !== product.category) {
+        updateData.category = formData.category;
+      }
+      
+      if (formData.status && formData.status !== product.status) {
+        updateData.status = formData.status;
+      }
+      
+      if (formData.reports && formData.reports.length > 0) {
+        // Format reports properly
+        updateData.reports = formData.reports.map(report => ({
+          reason: report.reason,
+          createdAt: report.createdAt || new Date(),
+          reportedBy: report.reportedBy || 'admin'
+        }));
+      }
+
+      // Only submit if there are changes
+      if (Object.keys(updateData).length === 0) {
+        toast.info('No changes to save');
+        return;
+      }
+
+      await onSubmit(updateData);
     } catch (error) {
       toast.error(error.message);
     } finally {

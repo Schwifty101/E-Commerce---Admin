@@ -48,14 +48,52 @@ const rejectSchema = Joi.object({
 
 // Add this validation schema at the top with other imports
 const updateProductSchema = Joi.object({
-  category: Joi.string().trim().min(2).max(50),
-  status: Joi.string().valid('pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated'),
-  reports: Joi.array().items(Joi.object({
-    reason: Joi.string().required(),
-    createdAt: Joi.date().required(),
-    reportedBy: Joi.string().required()
-  }))
-}).min(1); // At least one field must be provided
+  category: Joi.string()
+    .trim()
+    .min(2)
+    .max(50)
+    .optional()
+    .messages({
+      'string.min': 'Category must be at least 2 characters',
+      'string.max': 'Category cannot exceed 50 characters'
+    }),
+    
+  status: Joi.string()
+    .valid('pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated')
+    .optional()
+    .messages({
+      'any.only': 'Invalid status value'
+    }),
+    
+  reports: Joi.array()
+    .items(
+      Joi.object({
+        reason: Joi.string()
+          .required()
+          .messages({
+            'any.required': 'Report reason is required'
+          }),
+        createdAt: Joi.date()
+          .default(Date.now)
+          .messages({
+            'date.base': 'Invalid date format'
+          }),
+        reportedBy: Joi.string()
+          .default('admin')
+          .messages({
+            'string.base': 'Invalid reporter value'
+          })
+      })
+    )
+    .optional()
+    .messages({
+      'array.base': 'Reports must be an array'
+    })
+})
+.min(1)
+.messages({
+  'object.min': 'At least one field must be provided for update'
+});
 
 module.exports = {
   loginSchema,
