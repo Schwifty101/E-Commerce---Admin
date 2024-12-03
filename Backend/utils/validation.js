@@ -57,14 +57,14 @@ const updateProductSchema = Joi.object({
       'string.min': 'Category must be at least 2 characters',
       'string.max': 'Category cannot exceed 50 characters'
     }),
-    
+
   status: Joi.string()
     .valid('pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated')
     .optional()
     .messages({
       'any.only': 'Invalid status value'
     }),
-    
+
   reports: Joi.array()
     .items(
       Joi.object({
@@ -90,10 +90,10 @@ const updateProductSchema = Joi.object({
       'array.base': 'Reports must be an array'
     })
 })
-.min(1)
-.messages({
-  'object.min': 'At least one field must be provided for update'
-});
+  .min(1)
+  .messages({
+    'object.min': 'At least one field must be provided for update'
+  });
 
 module.exports = {
   loginSchema,

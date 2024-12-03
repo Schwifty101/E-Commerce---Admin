@@ -13,7 +13,7 @@ const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ 
+  res.status(401).json({
     message: 'Authentication required',
     code: 'AUTH_REQUIRED'
   });
@@ -21,21 +21,21 @@ const isAuthenticated = (req, res, next) => {
 
 const isAdmin = (req, res, next) => {
   if (!req.isAuthenticated()) {
-    res.status(401).json({ 
+    res.status(401).json({
       message: 'Authentication required',
       code: 'AUTH_REQUIRED'
     });
     return;
   }
-  
+
   if (!req.user.isAdmin) {
-    res.status(403).json({ 
+    res.status(403).json({
       message: 'Admin privileges required',
       code: 'ADMIN_REQUIRED'
     });
     return;
   }
-  
+
   next();
 };
 

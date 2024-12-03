@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const createProducts = async (sellerId) => [
+const createProducts = async (sellerId, adminId) => [
     {
         name: 'Wireless Headphones',
         price: 99.99,
@@ -15,6 +15,12 @@ const createProducts = async (sellerId) => [
         status: 'approved',
         seller: sellerId,
         description: 'High-quality wireless headphones with noise cancellation',
+        actionLogs: [{
+            action: 'approve',
+            performedBy: adminId,
+            reason: 'Product meets all requirements',
+            createdAt: new Date('2024-03-01')
+        }],
         createdAt: new Date('2024-03-01'),
         updatedAt: new Date('2024-03-01')
     },
@@ -27,6 +33,12 @@ const createProducts = async (sellerId) => [
         status: 'pending',
         seller: sellerId,
         description: 'Smart watch with health monitoring features',
+        actionLogs: [{
+            action: 'create',
+            performedBy: sellerId,
+            reason: 'New product submission',
+            createdAt: new Date('2024-03-10')
+        }],
         createdAt: new Date('2024-03-10'),
         updatedAt: new Date('2024-03-10')
     },
@@ -42,11 +54,18 @@ const createProducts = async (sellerId) => [
         flaggedReasons: ['Potential counterfeit'],
         reports: [
             {
+                reportedBy: adminId,
                 reason: 'Suspected counterfeit product',
                 description: 'Similar design to protected brand',
                 createdAt: new Date('2024-03-15')
             }
         ],
+        actionLogs: [{
+            action: 'flag',
+            performedBy: adminId,
+            reason: 'Suspected counterfeit product',
+            createdAt: new Date('2024-03-15')
+        }],
         createdAt: new Date('2024-03-15'),
         updatedAt: new Date('2024-03-15')
     },
@@ -59,6 +78,12 @@ const createProducts = async (sellerId) => [
         status: 'pending',
         seller: sellerId,
         description: 'RGB gaming mouse with programmable buttons',
+        actionLogs: [{
+            action: 'create',
+            performedBy: sellerId,
+            reason: 'New product submission',
+            createdAt: new Date('2024-03-18')
+        }],
         createdAt: new Date('2024-03-18'),
         updatedAt: new Date('2024-03-18')
     },
@@ -74,7 +99,14 @@ const createProducts = async (sellerId) => [
         rejectionReason: 'Insufficient product documentation',
         actionLogs: [
             {
+                action: 'create',
+                performedBy: sellerId,
+                reason: 'New product submission',
+                createdAt: new Date('2024-03-16')
+            },
+            {
                 action: 'reject',
+                performedBy: adminId,
                 reason: 'Missing certification documents',
                 createdAt: new Date('2024-03-16')
             }
@@ -90,18 +122,23 @@ const seedProducts = async () => {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        // Find a seller user
+        // Find a seller user and an admin user
         const seller = await User.findOne({ role: 'seller', isApproved: true });
+        const admin = await User.findOne({ role: 'admin' });
+        
         if (!seller) {
             throw new Error('No approved seller found. Please run userSeeder first.');
+        }
+        if (!admin) {
+            throw new Error('No admin user found. Please run userSeeder first.');
         }
 
         // Clear existing products
         await Product.deleteMany({});
         console.log('Cleared existing products');
 
-        // Create products with the seller ID
-        const products = await createProducts(seller._id);
+        // Create products with the seller ID and admin ID
+        const products = await createProducts(seller._id, admin._id);
         const createdProducts = await Product.insertMany(products);
 
         console.log(`${createdProducts.length} products seeded successfully`);

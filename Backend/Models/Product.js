@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 
 const reportSchema = new mongoose.Schema({
-  reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  reportedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   reason: { type: String, required: true },
   description: String,
   createdAt: { type: Date, default: Date.now }
@@ -10,10 +14,16 @@ const reportSchema = new mongoose.Schema({
 const actionLogSchema = new mongoose.Schema({
   action: { 
     type: String, 
-    enum: ['approve', 'reject', 'flag', 'escalate', 'delete'],
+    enum: ['create', 'update', 'delete', 'approve', 'reject', 'escalate', 'flag', 'status_change'],
     required: true 
   },
-  performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+  performedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  oldStatus: String,
+  newStatus: String,
   reason: String,
   createdAt: { type: Date, default: Date.now }
 });
@@ -29,39 +39,16 @@ const productSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated'],
     default: 'pending'
   },
-  seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  seller: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   description: { type: String, required: true },
   rejectionReason: String,
   flaggedReasons: [String],
   reports: [reportSchema],
-  actionLogs: [{
-    action: {
-      type: String,
-      enum: [
-        'create', 
-        'update', 
-        'delete', 
-        'approve', 
-        'reject', 
-        'escalate',
-        'status_change',
-        'flag'
-      ],
-      required: true
-    },
-    performedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    oldStatus: String,
-    newStatus: String,
-    reason: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  actionLogs: [actionLogSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

@@ -1,5 +1,6 @@
-import React from 'react';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import { FaTrash } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
 
 const ProductForm = ({ product, onSubmit, onCancel, isAdmin = false }) => {
   const [formData, setFormData] = React.useState({
@@ -15,44 +16,51 @@ const ProductForm = ({ product, onSubmit, onCancel, isAdmin = false }) => {
     flaggedReasons: product?.flaggedReasons || [],
     reports: product?.reports || [],
   });
+  const [newReport, setNewReport] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [newReport, setNewReport] = React.useState('');
-  const [submitting, setSubmitting] = React.useState(false);
+  const handleRemoveReport = (reportId) => {
+    setFormData({
+      ...formData,
+      reports: formData.reports.filter(report => report._id !== reportId)
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      
-      // Only include fields that have changed and are not empty
+
       const updateData = {};
-      
-      if (formData.category && formData.category !== product.category) {
+
+      if (formData.category !== product.category) {
         updateData.category = formData.category;
       }
-      
-      if (formData.status && formData.status !== product.status) {
+
+      if (formData.status !== product.status) {
+        // Enforce report requirement for reject/delete actions
+        if ((formData.status === 'rejected' || formData.status === 'deleted') &&
+          formData.reports.length === 0) {
+          toast.error('A report is required when rejecting or deleting a product');
+          return;
+        }
         updateData.status = formData.status;
       }
-      
-      if (formData.reports && formData.reports.length > 0) {
-        // Format reports properly
-        updateData.reports = formData.reports.map(report => ({
-          reason: report.reason,
-          createdAt: report.createdAt || new Date(),
-          reportedBy: report.reportedBy || 'admin'
-        }));
+
+      // Always include reports in update if they exist or have changed
+      if (formData.reports.length !== product.reports.length ||
+        JSON.stringify(formData.reports) !== JSON.stringify(product.reports)) {
+        updateData.reports = formData.reports;
       }
 
-      // Only submit if there are changes
       if (Object.keys(updateData).length === 0) {
-        toast.info('No changes to save');
+        toast.success('No changes to save');
         return;
       }
 
       await onSubmit(updateData);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to update product');
     } finally {
       setSubmitting(false);
     }
@@ -158,11 +166,21 @@ const ProductForm = ({ product, onSubmit, onCancel, isAdmin = false }) => {
         </label>
         <div className="mt-2 space-y-2">
           {formData.reports.map((report, index) => (
-            <div key={index} className="p-2 bg-red-50 rounded-md">
-              <p className="text-sm text-red-700">{report.reason}</p>
-              <p className="text-xs text-gray-500">
-                {new Date(report.createdAt).toLocaleDateString()}
-              </p>
+            <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-md">
+              <div className="flex-1">
+                <p className="text-sm text-red-700">{report.description || report.reason}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(report.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveReport(report._id || index)}
+                className="p-2 text-red-600 hover:text-red-800"
+                title="Remove report"
+              >
+                <FaTrash size={14} />
+              </button>
             </div>
           ))}
         </div>
