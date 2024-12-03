@@ -3,13 +3,14 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const mongoSanitize = require('express-mongo-sanitize');
+const cors = require('cors');
+const MongoStore = require('connect-mongo');
 const Admin = require('./Models/Admin');
 const dotenv = require('dotenv');
 const authRoutes = require('./Routes/auth');
 const dashboardRoutes = require('./Routes/dashboard');
 const userRoutes = require('./Routes/users');
-const cors = require('cors');
-const MongoStore = require('connect-mongo');
+const productRoutes = require('./Routes/products');
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.use(mongoSanitize());
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -71,6 +72,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -7,56 +7,68 @@ dotenv.config();
 
 const users = [
   {
+    name: 'Admin User',
     email: 'admin@example.com',
     password: 'admin123',
     role: 'admin',
     isApproved: true,
     isBanned: false,
+    verificationStatus: 'active',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    name: 'Seller One',
     email: 'seller1@example.com',
     password: 'seller123',
     role: 'seller',
     isApproved: true,
     isBanned: false,
+    verificationStatus: 'active',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    name: 'Seller Two',
     email: 'seller2@example.com',
     password: 'seller123',
     role: 'seller',
-    isApproved: false, // Pending approval
+    isApproved: false,
     isBanned: false,
+    verificationStatus: 'pending',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    name: 'Buyer One',
     email: 'buyer1@example.com',
     password: 'buyer123',
     role: 'buyer',
     isApproved: true,
     isBanned: false,
+    verificationStatus: 'active',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    name: 'Buyer Two',
     email: 'buyer2@example.com',
     password: 'buyer123',
     role: 'buyer',
     isApproved: true,
-    isBanned: true, // Banned user
+    isBanned: true,
+    verificationStatus: 'banned',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    name: 'Pending Seller',
     email: 'pendingseller@example.com',
     password: 'seller123',
     role: 'seller',
     isApproved: false,
     isBanned: false,
+    verificationStatus: 'pending',
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -64,15 +76,12 @@ const users = [
 
 const seedUsers = async () => {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Clear existing users
     await User.deleteMany({});
     console.log('Cleared existing users');
 
-    // Create new users
     const createdUsers = await Promise.all(
       users.map(async (user) => {
         const salt = await bcrypt.genSalt(10);
@@ -86,6 +95,12 @@ const seedUsers = async () => {
     );
 
     console.log(`${createdUsers.length} users seeded successfully`);
+    
+    console.log('Sample User IDs:');
+    createdUsers.forEach(user => {
+      console.log(`${user.name} (${user.role}): ${user._id}`);
+    });
+
     process.exit(0);
   } catch (error) {
     console.error('Error seeding users:', error);

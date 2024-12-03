@@ -2,114 +2,230 @@ import React from 'react';
 import ProductList from '../components/products/ProductList';
 import ProductForm from '../components/products/ProductForm';
 import Modal from '../components/common/Modal';
-import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-// Mock data for demonstration
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Wireless Headphones',
-    price: 99.99,
-    stock: 45,
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200',
-    status: 'approved',
-    seller: 'Tech Gadgets Inc',
-    createdAt: '2024-03-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Smart Watch',
-    price: 199.99,
-    stock: 8,
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=200',
-    status: 'pending',
-    seller: 'WearTech Solutions',
-    createdAt: '2024-03-10T00:00:00Z',
-  },
-  {
-    id: '3',
-    name: 'Leather Backpack',
-    price: 79.99,
-    stock: 23,
-    category: 'Accessories',
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200',
-    status: 'flagged',
-    seller: 'Fashion Outlet',
-    createdAt: '2024-03-15T00:00:00Z',
-  },
-];
+import { productService } from '../services/productService';
 
 const ProductManagement = () => {
-  const [products, setProducts] = React.useState(mockProducts);
+  const [products, setProducts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filterStatus, setFilterStatus] = React.useState('all');
+  const [showRejectionModal, setShowRejectionModal] = React.useState(false);
+  const [rejectionProduct, setRejectionProduct] = React.useState(null);
+  const [rejectionReason, setRejectionReason] = React.useState('');
   const [selectedProduct, setSelectedProduct] = React.useState(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [showProductModal, setShowProductModal] = React.useState(false);
 
-  const handleCreateProduct = (productData) => {
-    const newProduct = {
-      id: String(products.length + 1),
-      ...productData,
-      createdAt: new Date().toISOString(),
+  // Fetch products on mount and when filter changes
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const filters = filterStatus === 'all' ? {} : { status: filterStatus };
+        const data = await productService.getProducts(filters);
+        setProducts(data);
+      } catch (error) {
+        toast.error(error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setProducts([...products, newProduct]);
-    setIsModalOpen(false);
-    toast.success('Product created successfully');
+    fetchProducts();
+  }, [filterStatus]);
+
+  const handleApprove = async (product) => {
+    try {
+      await productService.approveProduct(product._id);
+      const updatedProducts = products.map((p) =>
+        p._id === product._id ? { ...p, status: 'approved' } : p
+      );
+      setProducts(updatedProducts);
+      toast.success('Product approved successfully');
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
-  const handleUpdateProduct = (productData) => {
-    if (!selectedProduct) return;
+  const handleReject = (product) => {
+    setRejectionProduct(product);
+    setShowRejectionModal(true);
+  };
 
-    const updatedProducts = products.map((product) =>
-      product.id === selectedProduct.id ? { ...product, ...productData } : product
-    );
+  const handleRejectConfirm = async (reason) => {
+    try {
+      if (!reason || reason.length < 10) {
+        toast.error('Please provide a detailed reason (minimum 10 characters)');
+        return;
+      }
 
-    setProducts(updatedProducts);
-    setSelectedProduct(null);
-    setIsModalOpen(false);
-    toast.success('Product updated successfully');
+      await productService.rejectProduct(rejectionProduct._id, reason);
+      const updatedProducts = products.map((p) =>
+        p._id === rejectionProduct._id
+          ? { ...p, status: 'rejected', rejectionReason: reason }
+          : p
+      );
+      setProducts(updatedProducts);
+      setShowRejectionModal(false);
+      setRejectionProduct(null);
+      setRejectionReason('');
+      toast.success('Product rejected successfully');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleEscalate = async (product) => {
+    try {
+      await productService.takeAction(product._id, 'escalate');
+      const updatedProducts = products.map((p) =>
+        p._id === product._id ? { ...p, status: 'escalated' } : p
+      );
+      setProducts(updatedProducts);
+      toast.success('Product escalated to senior review');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (product) => {
+    try {
+      await productService.takeAction(product._id, 'delete');
+      const updatedProducts = products.map((p) =>
+        p._id === product._id ? { ...p, status: 'deleted' } : p
+      );
+      setProducts(updatedProducts);
+      toast.success('Product deleted successfully');
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
-    setIsModalOpen(true);
+    setShowProductModal(true);
+  };
+
+  const handleProductUpdate = async (updatedData) => {
+    try {
+      // Only send allowed fields for update
+      const allowedUpdates = {
+        category: updatedData.category,
+        status: updatedData.status,
+        reports: updatedData.reports
+      };
+
+      const updated = await productService.updateProduct(selectedProduct._id, allowedUpdates);
+      
+      // Update local state
+      setProducts(products.map(p => 
+        p._id === updated._id ? updated : p
+      ));
+      
+      setShowProductModal(false);
+      setSelectedProduct(null);
+      toast.success('Product updated successfully');
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Product Management</h1>
-        <button
-          onClick={() => {
-            setSelectedProduct(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </button>
       </div>
 
-      <ProductList products={products} onProductClick={handleProductClick} />
+      <div className="flex space-x-2 mb-4">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="rounded-md border-gray-300"
+        >
+          <option value="all">All Products</option>
+          <option value="pending">Pending Approval</option>
+          <option value="flagged">Flagged Products</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+
+      <ProductList
+        products={products}
+        onProductClick={handleProductClick}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onEscalate={handleEscalate}
+        onDelete={handleDelete}
+      />
 
       <Modal
-        isOpen={isModalOpen}
+        isOpen={showRejectionModal}
         onClose={() => {
-          setIsModalOpen(false);
+          setShowRejectionModal(false);
+          setRejectionProduct(null);
+          setRejectionReason('');
+        }}
+        title="Reject Product"
+      >
+        <div className="space-y-4">
+          <p>Please provide a detailed reason for rejecting this product:</p>
+          <textarea
+            className="w-full rounded-md border-gray-300"
+            rows={3}
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Minimum 10 characters required"
+            minLength={10}
+            maxLength={500}
+          />
+          <p className="text-sm text-gray-500">
+            {rejectionReason.length}/500 characters
+            {rejectionReason.length < 10 && (
+              <span className="text-red-500"> (Minimum 10 characters required)</span>
+            )}
+          </p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => {
+                setShowRejectionModal(false);
+                setRejectionProduct(null);
+                setRejectionReason('');
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleRejectConfirm(rejectionReason)}
+              disabled={rejectionReason.length < 10}
+              className={`px-4 py-2 text-white rounded-md ${
+                rejectionReason.length < 10 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
+            >
+              Confirm Rejection
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showProductModal}
+        onClose={() => {
+          setShowProductModal(false);
           setSelectedProduct(null);
         }}
-        title={selectedProduct ? 'Edit Product' : 'Create Product'}
+        title="Product Details"
       >
         <ProductForm
-          product={selectedProduct || undefined}
-          onSubmit={selectedProduct ? handleUpdateProduct : handleCreateProduct}
+          product={selectedProduct}
+          onSubmit={handleProductUpdate}
           onCancel={() => {
-            setIsModalOpen(false);
+            setShowProductModal(false);
             setSelectedProduct(null);
           }}
+          isAdmin={true}
         />
       </Modal>
     </div>

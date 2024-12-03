@@ -1,6 +1,7 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 
-const ProductForm = ({ product, onSubmit, onCancel }) => {
+const ProductForm = ({ product, onSubmit, onCancel, isAdmin = false }) => {
   const [formData, setFormData] = React.useState({
     name: product?.name || '',
     price: product?.price || 0,
@@ -9,67 +10,88 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
     image: product?.image || '',
     status: product?.status || 'pending',
     seller: product?.seller || '',
+    description: product?.description || '',
+    rejectionReason: product?.rejectionReason || '',
+    flaggedReasons: product?.flaggedReasons || [],
+    reports: product?.reports || [],
   });
 
-  const handleSubmit = (e) => {
+  const [newReport, setNewReport] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    try {
+      setSubmitting(true);
+      await onSubmit(formData);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addReport = () => {
+    if (newReport.trim()) {
+      setFormData({
+        ...formData,
+        reports: [...formData.reports, {
+          reason: newReport.trim(),
+          createdAt: new Date(),
+          reportedBy: 'admin'
+        }]
+      });
+      setNewReport('');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Read-only fields for admin */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700">
           Product Name
         </label>
         <input
           type="text"
-          id="name"
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
+          className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50"
+          disabled
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700">
             Price
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
               <span className="text-gray-500 sm:text-sm">$</span>
             </div>
             <input
               type="number"
-              id="price"
-              min="0"
-              step="0.01"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              className="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              required
+              className="pl-7 block w-full rounded-md border-gray-300 bg-gray-50"
+              disabled
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="stock" className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700">
             Stock
           </label>
           <input
             type="number"
-            id="stock"
-            min="0"
             value={formData.stock}
-            onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            required
+            className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50"
+            disabled
           />
         </div>
       </div>
 
+      {/* Editable fields for admin */}
       <div>
         <label htmlFor="category" className="block text-sm font-medium text-gray-700">
           Category
@@ -80,35 +102,6 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
-        />
-      </div>
-
-      <div>
-        <label htmlFor="image" className="block text-sm font-medium text-gray-700">
-          Image URL
-        </label>
-        <input
-          type="url"
-          id="image"
-          value={formData.image}
-          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
-        />
-      </div>
-
-      <div>
-        <label htmlFor="seller" className="block text-sm font-medium text-gray-700">
-          Seller
-        </label>
-        <input
-          type="text"
-          id="seller"
-          value={formData.seller}
-          onChange={(e) => setFormData({ ...formData, seller: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
         />
       </div>
 
@@ -126,22 +119,59 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
           <option value="flagged">Flagged</option>
+          <option value="deleted">Deleted</option>
+          <option value="escalated">Escalated</option>
         </select>
+      </div>
+
+      {/* Reports section */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Reports ({formData.reports.length})
+        </label>
+        <div className="mt-2 space-y-2">
+          {formData.reports.map((report, index) => (
+            <div key={index} className="p-2 bg-red-50 rounded-md">
+              <p className="text-sm text-red-700">{report.reason}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(report.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex space-x-2">
+          <input
+            type="text"
+            value={newReport}
+            onChange={(e) => setNewReport(e.target.value)}
+            placeholder="Add a report..."
+            className="flex-1 rounded-md border-gray-300"
+          />
+          <button
+            type="button"
+            onClick={addReport}
+            className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Add Report
+          </button>
+        </div>
       </div>
 
       <div className="flex justify-end space-x-3 mt-6">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          disabled={submitting}
+          className="px-4 py-2 border border-gray-300 rounded-md"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          disabled={submitting}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md"
         >
-          {product ? 'Update Product' : 'Create Product'}
+          {submitting ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </form>

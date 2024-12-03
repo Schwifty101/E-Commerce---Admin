@@ -2,7 +2,7 @@ import React from 'react';
 import Table from '../common/Table';
 import { format } from 'date-fns';
 
-const ProductList = ({ products, onProductClick }) => {
+const ProductList = ({ products, loading, onProductClick, onApprove, onReject, onEscalate, onDelete }) => {
   const columns = React.useMemo(
     () => [
       {
@@ -55,17 +55,96 @@ const ProductList = ({ products, onProductClick }) => {
       {
         Header: 'Seller',
         accessor: 'seller',
+        Cell: ({ value }) => value?.name || value?.email || 'Unknown Seller',
       },
       {
         Header: 'Created At',
         accessor: 'createdAt',
         Cell: ({ value }) => format(new Date(value), 'MMM dd, yyyy'),
       },
+      {
+        Header: 'Actions',
+        id: 'actions',
+        Cell: ({ row }) => (
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onProductClick(row.original);
+              }}
+              className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            >
+              View Details
+            </button>
+            {row.original.status === 'pending' && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onApprove(row.original);
+                  }}
+                  className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReject(row.original);
+                  }}
+                  className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                >
+                  Reject
+                </button>
+              </>
+            )}
+            {row.original.status === 'flagged' && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEscalate(row.original);
+                  }}
+                  className="px-3 py-1 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700"
+                >
+                  Escalate
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(row.original);
+                  }}
+                  className="px-3 py-1 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        ),
+      },
+      {
+        Header: 'Reports',
+        accessor: 'reports',
+        Cell: ({ value }) => value?.length > 0 && (
+          <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
+            {value.length} reports
+          </span>
+        ),
+      },
     ],
-    []
+    [onApprove, onReject, onEscalate, onDelete, onProductClick]
   );
 
-  return <Table columns={columns} data={products} onRowClick={onProductClick} />;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return <Table columns={columns} data={products} />;
 };
 
 export default ProductList;

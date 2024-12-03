@@ -3,7 +3,7 @@ const Joi = require('joi');
 const loginSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required()
-}); 
+});
 
 const createUserSchema = Joi.object({
   name: Joi.string().required().min(2).max(50),
@@ -22,9 +22,45 @@ const createUserSchema = Joi.object({
     }),
     otherwise: Joi.optional()
   })
-}); 
+});
+
+const productActionSchema = Joi.object({
+  action: Joi.string()
+    .valid('escalate', 'delete')
+    .required()
+    .messages({
+      'any.required': 'Action is required',
+      'string.valid': 'Action must be either "escalate" or "delete"'
+    }),
+  reason: Joi.string()
+    .min(10)
+    .max(500)
+    .optional()
+    .messages({
+      'string.min': 'Reason must be at least 10 characters',
+      'string.max': 'Reason cannot exceed 500 characters'
+    })
+});
+
+const rejectSchema = Joi.object({
+  reason: Joi.string().min(10).max(500).required()
+});
+
+// Add this validation schema at the top with other imports
+const updateProductSchema = Joi.object({
+  category: Joi.string().trim().min(2).max(50),
+  status: Joi.string().valid('pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated'),
+  reports: Joi.array().items(Joi.object({
+    reason: Joi.string().required(),
+    createdAt: Joi.date().required(),
+    reportedBy: Joi.string().required()
+  }))
+}).min(1); // At least one field must be provided
 
 module.exports = {
   loginSchema,
-  createUserSchema
+  createUserSchema,
+  productActionSchema,
+  rejectSchema,
+  updateProductSchema
 };

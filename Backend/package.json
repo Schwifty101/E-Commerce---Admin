@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "build": "echo \"No build step required for JavaScript\"",
     "create-admin": "node seeds/createAdmin.js",
-    "seed-users": "node seeds/userSeeder.js"
+    "seed-users": "node seeds/userSeeder.js",
+    "seed-products": "node seeds/productSeeder.js"
   },
   "keywords": [],
   "author": "",
