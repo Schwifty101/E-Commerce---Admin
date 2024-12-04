@@ -66,8 +66,8 @@ export const orderService = {
         return response.json();
     },
 
-    processReturnRequest: async (requestId, actionData) => {
-        const response = await fetch(`${BASE_URL}/${requestId}/returns`, {
+    processReturnRequest: async (orderId, actionData) => {
+        const response = await fetch(`${BASE_URL}/${orderId}/returns`, {
             method: 'POST',
             credentials: 'include',
             headers: {

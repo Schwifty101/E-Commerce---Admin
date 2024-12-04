@@ -107,65 +107,73 @@ const OrderManagement = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Orders" />
-          <Tab label="Returns & Refunds" />
-        </Tabs>
-      </Box>
+    <div className="p-8 space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+        <Button 
+          variant="contained" 
+          onClick={handleExport}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+        >
+          Export Orders
+        </Button>
+      </div>
 
-      {activeTab === 0 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h5">Order Management</Typography>
-            <Button variant="contained" onClick={handleExport}>
-              Export Orders
-            </Button>
-          </Box>
+      <div className="bg-white rounded-lg shadow">
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
+          <Tabs value={activeTab} onChange={handleTabChange}>
+            <Tab label="Orders" />
+            <Tab label="Returns & Refunds" />
+          </Tabs>
+        </Box>
 
-          {selectedOrder ? (
+        <div className="p-6">
+          {activeTab === 0 && (
             <Box>
-              <Button
-                variant="outlined"
-                onClick={() => setSelectedOrder(null)}
-                sx={{ mb: 2 }}
-              >
-                Back to Orders
-              </Button>
-              <OrderDetails 
-                order={selectedOrder}
-                onBack={() => setSelectedOrder(null)}
-                onStatusUpdate={() => setIsStatusModalOpen(true)}
-              />
+              {selectedOrder ? (
+                <Box className="space-y-6">
+                  <Button
+                    variant="outlined"
+                    onClick={() => setSelectedOrder(null)}
+                    className="mb-4"
+                  >
+                    Back to Orders
+                  </Button>
+                  <OrderDetails 
+                    order={selectedOrder}
+                    onBack={() => setSelectedOrder(null)}
+                    onStatusUpdate={() => setIsStatusModalOpen(true)}
+                  />
+                </Box>
+              ) : (
+                <OrderList
+                  orders={orders}
+                  onOrderClick={setSelectedOrder}
+                  currentPage={pagination.page}
+                  totalPages={Math.ceil(pagination.total / pagination.limit)}
+                  onPageChange={fetchOrders}
+                  loading={loading}
+                />
+              )}
             </Box>
-          ) : (
-            <OrderList
-              orders={orders}
-              onOrderClick={setSelectedOrder}
-              currentPage={pagination.page}
-              totalPages={Math.ceil(pagination.total / pagination.limit)}
-              onPageChange={fetchOrders}
-              loading={loading}
+          )}
+
+          {activeTab === 1 && (
+            <ReturnRefundManagement
+              requests={returnRequests}
+              onUpdateRequest={handleReturnRequest}
             />
           )}
-        </Box>
-      )}
+        </div>
 
-      {activeTab === 1 && (
-        <ReturnRefundManagement
-          requests={returnRequests}
-          onUpdateRequest={handleReturnRequest}
+        <OrderStatusModal
+          isOpen={isStatusModalOpen}
+          onClose={() => setIsStatusModalOpen(false)}
+          order={selectedOrder}
+          onUpdateStatus={handleStatusUpdate}
         />
-      )}
-
-      <OrderStatusModal
-        isOpen={isStatusModalOpen}
-        onClose={() => setIsStatusModalOpen(false)}
-        order={selectedOrder}
-        onUpdateStatus={handleStatusUpdate}
-      />
-    </Box>
+      </div>
+    </div>
   );
 };
 

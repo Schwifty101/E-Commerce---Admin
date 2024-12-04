@@ -9,10 +9,16 @@ const validateOrderStatus = (req, res, next) => {
   };
   
   const validateReturnAction = (req, res, next) => {
-    const { error } = returnActionSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+    const { status, adminComments } = req.body;
+    
+    if (!status || !['approved', 'rejected', 'escalated'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status value' });
     }
+
+    if (!adminComments || adminComments.trim().length === 0) {
+        return res.status(400).json({ message: 'Admin comments are required' });
+    }
+
     next();
   };
 

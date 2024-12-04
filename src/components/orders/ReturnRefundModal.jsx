@@ -7,9 +7,10 @@ const ReturnRefundModal = ({ isOpen, onClose, request, onAction }) => {
   const [action, setAction] = useState('');
 
   useEffect(() => {
-    if (request?.returnRequest) {
-      setAction(request.returnRequest.status || '');
-      setComment(request.returnRequest.adminComments || '');
+    // Reset form when request changes
+    if (request) {
+      setAction('');
+      setComment('');
     }
   }, [request]);
 
@@ -22,57 +23,28 @@ const ReturnRefundModal = ({ isOpen, onClose, request, onAction }) => {
     onAction(request, action, comment);
   };
 
-  if (!request || !request.returnRequest) {
-    return null;
-  }
-
-  const { returnRequest } = request;
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Review Return/Refund Request">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="Review Return/Refund Request"
+    >
       <div className="p-4">
         <div className="mb-4">
           <h3 className="text-lg font-medium">Request Details</h3>
           <div className="mt-2 space-y-2">
             <p>
-              <span className="font-medium">Order Number:</span> {request.orderNumber}
+              <span className="font-medium">Order Number:</span> {request?.orderNumber || 'N/A'}
             </p>
             <p>
-              <span className="font-medium">Customer:</span> {request.customer?.name || 'N/A'}
+              <span className="font-medium">Customer:</span> {request?.customer?.name || 'N/A'}
             </p>
             <p>
-              <span className="font-medium">Reason:</span> {returnRequest.reason || 'N/A'}
-            </p>
-            {returnRequest.description && (
-              <p>
-                <span className="font-medium">Description:</span> {returnRequest.description}
-              </p>
-            )}
-            <p>
-              <span className="font-medium">Refund Amount:</span> ${(returnRequest.refundAmount || request.total || 0).toFixed(2)}
+              <span className="font-medium">Type:</span> {request?.returnRequest?.reason || 'N/A'}
             </p>
             <p>
-              <span className="font-medium">Request Date:</span> {
-                returnRequest.requestedAt ?
-                  new Date(returnRequest.requestedAt).toLocaleDateString() :
-                  'N/A'
-              }
+              <span className="font-medium">Status:</span> {request?.returnRequest?.status || 'Pending'}
             </p>
-            {returnRequest.images && returnRequest.images.length > 0 && (
-              <div>
-                <span className="font-medium">Attached Images:</span>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {returnRequest.images.map((image, index) => (
-                    <img
-                      key={index}
-                      src={image}
-                      alt={`Return request image ${index + 1}`}
-                      className="w-full h-24 object-cover rounded"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

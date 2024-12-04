@@ -1,25 +1,34 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import Table from '../common/Table';
-import toast from 'react-hot-toast';
+import ReturnRefundModal from './ReturnRefundModal';
+import { toast } from 'react-hot-toast';
 
 const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleAction = (request, action, comment) => {
-        onUpdateRequest({
-            ...request,
-            returnRequest: {
-                ...request.returnRequest,
+    const handleReviewClick = (request) => {
+        if (!request) {
+            toast.error('No request data available');
+            return;
+        }
+        setSelectedRequest(request);
+        setIsModalOpen(true);
+    };
+
+    const handleAction = async (request, action, comment) => {
+        try {
+            await onUpdateRequest(request._id, {
                 status: action,
-                adminComments: comment,
-                processedAt: new Date().toISOString(),
-            }
-        });
-        setIsModalOpen(false);
-        setSelectedRequest(null);
-        toast.success(`Return request ${action} successfully`);
+                adminComments: comment
+            });
+            setIsModalOpen(false);
+            setSelectedRequest(null);
+            toast.success(`Return request ${action} successfully`);
+        } catch (error) {
+            toast.error(error.message);
+        }
     };
 
     const columns = React.useMemo(
@@ -60,13 +69,37 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
                 accessor: row => row.returnRequest?.requestedAt,
                 id: 'requestDate',
                 Cell: ({ value }) => value ? format(new Date(value), 'MMM d, yyyy') : 'N/A'
+            },
+            {
+                Header: 'Actions',
+                id: 'actions',
+                Cell: ({ row }) => (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleReviewClick(row.original);
+                        }}
+                        type="button"
+                        className="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded"
+                    >
+                        Review
+                    </button>
+                )
             }
         ],
         []
     );
 
     return (
-        <Table columns={columns} data={requests} />
+        <div>
+            <Table columns={columns} data={requests} />
+            <ReturnRefundModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                request={selectedRequest}
+                onAction={handleAction}
+            />
+        </div>
     );
 };
 

@@ -130,33 +130,37 @@ const ProductManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Product Management</h1>
+    <div className="p-8 space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
       </div>
 
-      <div className="flex space-x-2 mb-4">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-md border-gray-300"
-        >
-          <option value="all">All Products</option>
-          <option value="pending">Pending Approval</option>
-          <option value="flagged">Flagged Products</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-      </div>
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center space-x-4">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
+            >
+              <option value="all">All Products</option>
+              <option value="pending">Pending Approval</option>
+              <option value="flagged">Flagged Products</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
 
-      <ProductList
-        products={products}
-        onProductClick={handleProductClick}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        onEscalate={handleEscalate}
-        onDelete={handleDelete}
-      />
+          <ProductList
+            products={products}
+            onProductClick={handleProductClick}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onEscalate={handleEscalate}
+            onDelete={handleDelete}
+          />
+        </div>
+      </div>
 
       <Modal
         isOpen={showRejectionModal}
@@ -167,7 +171,7 @@ const ProductManagement = () => {
         }}
         title="Reject Product"
       >
-        <div className="space-y-4">
+        <div className="p-6 space-y-6">
           <p>Please provide a detailed reason for rejecting this product:</p>
           <textarea
             className="w-full rounded-md border-gray-300"

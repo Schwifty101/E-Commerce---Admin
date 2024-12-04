@@ -114,7 +114,7 @@ const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, comments } = req.body;
-    
+
     const order = await Order.findById(id);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -148,7 +148,7 @@ const updateOrderStatus = async (req, res) => {
 const getReturnRequests = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
-    
+
     const query = {};
     if (status) {
       query['returnRequest.status'] = status;
@@ -180,7 +180,7 @@ const getReturnRequests = async (req, res) => {
 const processReturnRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, comments, refundAmount } = req.body;
+    const { status, adminComments } = req.body;
 
     const order = await Order.findById(id);
     if (!order) {
@@ -188,35 +188,21 @@ const processReturnRequest = async (req, res) => {
     }
 
     if (!order.returnRequest) {
-      return res.status(400).json({ message: 'No return request found for this order' });
+      return res.status(400).json({ message: 'No return request exists for this order' });
     }
 
-    order.returnRequest.status = action;
-    order.returnRequest.processedBy = req.user._id;
+    // Update return request
+    order.returnRequest.status = status;
+    order.returnRequest.adminComments = adminComments;
     order.returnRequest.processedAt = new Date();
-    order.returnRequest.comments = comments;
-
-    if (action === 'approved') {
-      order.status = 'returned';
-      if (refundAmount) {
-        // Process refund logic here
-        order.returnRequest.refundAmount = refundAmount;
-      }
-    }
+    order.returnRequest.processedBy = req.user._id;
 
     await order.save();
 
-    // Send notification
-    await sendNotification({
-      userId: order.customer,
-      title: 'Return Request Updated',
-      message: `Your return request for order #${order.orderNumber} has been ${action}`
-    });
-
-    res.json(order);
+    res.json({ message: 'Return request processed successfully', order });
   } catch (error) {
     console.error('Error processing return request:', error);
-    res.status(500).json({ message: 'Error processing return request' });
+    res.status(500).json({ message: 'Failed to process return request' });
   }
 };
 
@@ -263,7 +249,7 @@ const exportOrders = async (req, res) => {
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader(
-        'Content-Disposition', 
+        'Content-Disposition',
         `attachment; filename=orders-${format(new Date(), 'yyyy-MM-dd')}.xlsx`
       );
 
@@ -274,10 +260,10 @@ const exportOrders = async (req, res) => {
       const doc = new PDFDocument();
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
-        'Content-Disposition', 
+        'Content-Disposition',
         `attachment; filename=orders-${format(new Date(), 'yyyy-MM-dd')}.pdf`
       );
-      
+
       doc.pipe(res);
 
       // Add PDF content
