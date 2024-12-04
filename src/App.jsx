@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './services/AuthContext';
 import Login from './pages/Login';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -16,7 +16,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      
+
       {isAdminAuthenticated ? (
         <Route
           path="/*"

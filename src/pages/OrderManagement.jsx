@@ -1,184 +1,178 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Box, Tab, Tabs, Button, Typography } from '@mui/material';
+import { orderService } from '../services/orderService';
 import OrderList from '../components/orders/OrderList';
-import OrderForm from '../components/orders/OrderForm';
 import OrderDetails from '../components/orders/OrderDetails';
-import Modal from '../components/common/Modal';
-import { Plus } from 'lucide-react';
+import OrderStatusModal from '../components/orders/OrderStatusModal';
+import ReturnRefundManagement from '../components/orders/ReturnRefundManagement';
 import toast from 'react-hot-toast';
 
-// Mock data for demonstration
-const mockOrders = [
-  {
-    id: '1',
-    customerName: 'John Doe',
-    date: '2024-03-15T10:30:00Z',
-    status: 'delivered',
-    total: 156.00,
-    items: [
-      {
-        productId: '1',
-        name: 'Wireless Headphones',
-        quantity: 1,
-        price: 99.99
-      },
-      {
-        productId: '2',
-        name: 'Phone Case',
-        quantity: 2,
-        price: 28.00
-      }
-    ],
-    shippingAddress: '123 Main St, Anytown, ST 12345',
-    paymentStatus: 'paid'
-  },
-  {
-    id: '2',
-    customerName: 'Jane Smith',
-    date: '2024-03-14T15:45:00Z',
-    status: 'processing',
-    total: 234.50,
-    items: [
-      {
-        productId: '3',
-        name: 'Smart Watch',
-        quantity: 1,
-        price: 199.99
-      },
-      {
-        productId: '4',
-        name: 'Watch Band',
-        quantity: 1,
-        price: 34.51
-      }
-    ],
-    shippingAddress: '456 Oak Ave, Somewhere, ST 67890',
-    paymentStatus: 'pending'
-  }
-];
-
 const OrderManagement = () => {
-  const [orders, setOrders] = React.useState(mockOrders);
-  const [selectedOrder, setSelectedOrder] = React.useState(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [modalMode, setModalMode] = React.useState('create');
+  const [activeTab, setActiveTab] = useState(0);
+  const [orders, setOrders] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0
+  });
 
-  const handleCreateOrder = (orderData) => {
-    const newOrder = {
-      id: String(orders.length + 1),
-      date: new Date().toISOString(),
-      ...orderData,
-    };
+  // Fetch orders with filters
+  const fetchOrders = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await orderService.getOrders({
+        page,
+        limit: pagination.limit,
+        // Add any additional filters here if needed
+      });
 
-    setOrders([...orders, newOrder]);
-    setIsModalOpen(false);
-    toast.success('Order created successfully');
-  };
-
-  const handleUpdateOrder = (orderData) => {
-    if (!selectedOrder) return;
-
-    const updatedOrders = orders.map((order) =>
-      order.id === selectedOrder.id ? { ...order, ...orderData } : order
-    );
-
-    setOrders(updatedOrders);
-    setSelectedOrder(null);
-    setIsModalOpen(false);
-    toast.success('Order updated successfully');
-  };
-
-  const handleOrderClick = (order) => {
-    setSelectedOrder(order);
-    setModalMode('view');
-    setIsModalOpen(true);
-  };
-
-  const getModalTitle = () => {
-    switch (modalMode) {
-      case 'create':
-        return 'Create Order';
-      case 'edit':
-        return 'Edit Order';
-      case 'view':
-        return 'Order Details';
-      default:
-        return '';
+      if (response.orders && response.pagination) {
+        setOrders(response.orders);
+        setPagination(prev => ({
+          ...prev,
+          page: response.pagination.currentPage || page,
+          total: response.pagination.total || 0,
+          limit: response.pagination.limit || prev.limit
+        }));
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to fetch orders');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getModalContent = () => {
-    switch (modalMode) {
-      case 'create':
-      case 'edit':
-        return (
-          <OrderForm
-            order={modalMode === 'edit' ? selectedOrder || undefined : undefined}
-            onSubmit={modalMode === 'edit' ? handleUpdateOrder : handleCreateOrder}
-            onCancel={() => {
-              setIsModalOpen(false);
-              setSelectedOrder(null);
-            }}
-          />
-        );
-      case 'view':
-        return selectedOrder ? (
-          <div>
-            <OrderDetails order={selectedOrder} />
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setModalMode('edit');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Edit Order
-              </button>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setSelectedOrder(null);
-                }}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ) : null;
-      default:
-        return null;
+  // Fetch return requests
+  const fetchReturnRequests = async () => {
+    try {
+      const response = await orderService.getReturnRequests();
+      setReturnRequests(response.returns);
+    } catch (error) {
+      toast.error(error.message || 'Failed to fetch return requests');
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    fetchReturnRequests();
+  }, []);
+
+  // Handle tab change
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    setSelectedOrder(null);
+  };
+
+  // Handle order status update
+  const handleStatusUpdate = async (orderId, statusData) => {
+    try {
+      await orderService.updateOrderStatus(orderId, statusData);
+      toast.success('Order status updated successfully');
+      fetchOrders(pagination.page);
+      setIsStatusModalOpen(false);
+    } catch (error) {
+      toast.error(error.message || 'Failed to update order status');
+    }
+  };
+
+  // Handle return request processing
+  const handleReturnRequest = async (requestId, actionData) => {
+    try {
+      await orderService.processReturnRequest(requestId, actionData);
+      toast.success('Return request processed successfully');
+      fetchReturnRequests();
+    } catch (error) {
+      toast.error(error.message || 'Failed to process return request');
+    }
+  };
+
+  // Handle order export
+  const handleExport = async () => {
+    try {
+      const blob = await orderService.exportOrders();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to export orders');
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Order Management</h1>
-        <button
-          onClick={() => {
-            setSelectedOrder(null);
-            setModalMode('create');
-            setIsModalOpen(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    <div className="p-8 space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+        <Button 
+          variant="contained" 
+          onClick={handleExport}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Order
-        </button>
+          Export Orders
+        </Button>
       </div>
 
-      <OrderList orders={orders} onOrderClick={handleOrderClick} />
+      <div className="bg-white rounded-lg shadow">
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
+          <Tabs value={activeTab} onChange={handleTabChange}>
+            <Tab label="Orders" />
+            <Tab label="Returns & Refunds" />
+          </Tabs>
+        </Box>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedOrder(null);
-        }}
-        title={getModalTitle()}
-      >
-        {getModalContent()}
-      </Modal>
+        <div className="p-6">
+          {activeTab === 0 && (
+            <Box>
+              {selectedOrder ? (
+                <Box className="space-y-6">
+                  <Button
+                    variant="outlined"
+                    onClick={() => setSelectedOrder(null)}
+                    className="mb-4"
+                  >
+                    Back to Orders
+                  </Button>
+                  <OrderDetails 
+                    order={selectedOrder}
+                    onBack={() => setSelectedOrder(null)}
+                    onStatusUpdate={() => setIsStatusModalOpen(true)}
+                  />
+                </Box>
+              ) : (
+                <OrderList
+                  orders={orders}
+                  onOrderClick={setSelectedOrder}
+                  currentPage={pagination.page}
+                  totalPages={Math.ceil(pagination.total / pagination.limit)}
+                  onPageChange={fetchOrders}
+                  loading={loading}
+                />
+              )}
+            </Box>
+          )}
+
+          {activeTab === 1 && (
+            <ReturnRefundManagement
+              requests={returnRequests}
+              onUpdateRequest={handleReturnRequest}
+            />
+          )}
+        </div>
+
+        <OrderStatusModal
+          isOpen={isStatusModalOpen}
+          onClose={() => setIsStatusModalOpen(false)}
+          order={selectedOrder}
+          onUpdateStatus={handleStatusUpdate}
+        />
+      </div>
     </div>
   );
 };

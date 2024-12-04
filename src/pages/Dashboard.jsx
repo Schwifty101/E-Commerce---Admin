@@ -43,10 +43,12 @@ const mockOrders = [
 
 const Dashboard = () => {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
+    <div className="p-8 space-y-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatsCard
           title="Total Sales"
           value="$12,345"
@@ -77,7 +79,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="mt-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <RecentOrders orders={mockOrders} />
       </div>
     </div>
