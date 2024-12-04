@@ -60,6 +60,11 @@ const ProductList = ({ products, loading, onProductClick, onApprove, onReject, o
       {
         Header: 'Created At',
         accessor: 'createdAt',
+        sortType: (rowA, rowB) => {
+          const a = new Date(rowA.values.createdAt).getTime();
+          const b = new Date(rowB.values.createdAt).getTime();
+          return a > b ? 1 : -1;
+        },
         Cell: ({ value }) => format(new Date(value), 'MMM dd, yyyy'),
       },
       {

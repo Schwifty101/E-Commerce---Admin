@@ -11,6 +11,16 @@ const Table = ({ columns, data, onRowClick }) => {
     {
       columns,
       data,
+      initialState: {
+        sortBy: [
+          {
+            id: 'createdAt',
+            desc: true
+          }
+        ]
+      },
+      disableSortRemove: true,
+      disableMultiSort: true
     },
     useSortBy,
     usePagination
@@ -25,14 +35,19 @@ const Table = ({ columns, data, onRowClick }) => {
             return (
               <tr key={key} {...headerGroupProps}>
                 {headerGroup.headers.map(column => {
-                  const { key, ...columnProps } = column.getHeaderProps();
+                  const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
                   return (
                     <th
                       key={key}
                       {...columnProps}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     >
-                      {column.render('Header')}
+                      <div className="flex items-center space-x-1">
+                        <span>{column.render('Header')}</span>
+                        <span className="text-gray-400">
+                          {column.isSorted && (column.isSortedDesc ? ' ▼' : ' ▲')}
+                        </span>
+                      </div>
                     </th>
                   );
                 })}
