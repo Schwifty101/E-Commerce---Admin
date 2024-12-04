@@ -95,10 +95,31 @@ const updateProductSchema = Joi.object({
     'object.min': 'At least one field must be provided for update'
   });
 
+const orderStatusSchema = Joi.object({
+  status: Joi.string()
+    .valid('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned')
+    .required(),
+  comments: Joi.string().required()
+});
+
+const returnActionSchema = Joi.object({
+  action: Joi.string()
+    .valid('approve', 'reject', 'escalate')
+    .required(),
+  comments: Joi.string().required(),
+  refundAmount: Joi.when('action', {
+    is: 'approve',
+    then: Joi.number().required(),
+    otherwise: Joi.number().optional()
+  })
+});
+
 module.exports = {
   loginSchema,
   createUserSchema,
   productActionSchema,
   rejectSchema,
-  updateProductSchema
+  updateProductSchema,
+  orderStatusSchema,
+  returnActionSchema
 };

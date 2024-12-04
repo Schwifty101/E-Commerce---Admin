@@ -2,158 +2,133 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const dotenv = require('dotenv');
+const seedUsers = require('./userSeeder');
 
 dotenv.config();
 
-const createProducts = async (sellerId, adminId) => [
-    {
-        name: 'Wireless Headphones',
-        price: 99.99,
-        stock: 45,
-        category: 'Electronics',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200',
-        status: 'approved',
-        seller: sellerId,
-        description: 'High-quality wireless headphones with noise cancellation',
+const createProducts = async (sellers, admin) => {
+  const categories = ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports'];
+  const statuses = ['pending', 'approved', 'rejected', 'flagged'];
+  const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
+  const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const products = [];
+  const productNames = {
+    Electronics: ['Wireless Headphones', 'Smart Watch', 'Gaming Mouse', 'Mechanical Keyboard', 'USB-C Hub'],
+    Clothing: ['Cotton T-Shirt', 'Denim Jeans', 'Winter Jacket', 'Running Shoes', 'Baseball Cap'],
+    'Home & Garden': ['Garden Tools Set', 'Bed Sheets', 'Coffee Maker', 'Wall Clock', 'Plant Pot'],
+    Books: ['Programming Guide', 'Mystery Novel', 'Cookbook', 'Self-Help Book', 'History Book'],
+    Sports: ['Yoga Mat', 'Tennis Racket', 'Basketball', 'Dumbbells Set', 'Running Shorts']
+  };
+
+  sellers.forEach(seller => {
+    const numProducts = getRandomNumber(3, 7);
+    
+    for (let i = 0; i < numProducts; i++) {
+      const category = getRandomItem(categories);
+      const status = getRandomItem(statuses);
+      const createdAt = new Date(Date.now() - getRandomNumber(0, 30) * 24 * 60 * 60 * 1000);
+
+      const product = {
+        name: getRandomItem(productNames[category]),
+        price: getRandomNumber(1000, 50000) / 100,
+        stock: getRandomNumber(0, 100),
+        category,
+        image: `https://picsum.photos/seed/${Math.random()}/200`,
+        status,
+        seller: seller._id,
+        description: `High-quality ${category.toLowerCase()} product from ${seller.name}`,
+        specifications: {
+          brand: `Brand ${getRandomNumber(1, 10)}`,
+          model: `Model ${getRandomNumber(100, 999)}`,
+          warranty: `${getRandomNumber(1, 3)} years`
+        },
         actionLogs: [{
-            action: 'approve',
-            performedBy: adminId,
-            reason: 'Product meets all requirements',
-            createdAt: new Date('2024-03-01')
+          action: 'create',
+          performedBy: seller._id,
+          reason: 'New product submission',
+          createdAt
         }],
-        createdAt: new Date('2024-03-01'),
-        updatedAt: new Date('2024-03-01')
-    },
-    {
-        name: 'Smart Watch',
-        price: 199.99,
-        stock: 8,
-        category: 'Electronics',
-        image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=200',
-        status: 'pending',
-        seller: sellerId,
-        description: 'Smart watch with health monitoring features',
-        actionLogs: [{
-            action: 'create',
-            performedBy: sellerId,
-            reason: 'New product submission',
-            createdAt: new Date('2024-03-10')
-        }],
-        createdAt: new Date('2024-03-10'),
-        updatedAt: new Date('2024-03-10')
-    },
-    {
-        name: 'Leather Backpack',
-        price: 79.99,
-        stock: 23,
-        category: 'Accessories',
-        image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200',
-        status: 'flagged',
-        seller: sellerId,
-        description: 'Genuine leather backpack with laptop compartment',
-        flaggedReasons: ['Potential counterfeit'],
-        reports: [
-            {
-                reportedBy: adminId,
-                reason: 'Suspected counterfeit product',
-                description: 'Similar design to protected brand',
-                createdAt: new Date('2024-03-15')
-            }
-        ],
-        actionLogs: [{
-            action: 'flag',
-            performedBy: adminId,
-            reason: 'Suspected counterfeit product',
-            createdAt: new Date('2024-03-15')
-        }],
-        createdAt: new Date('2024-03-15'),
-        updatedAt: new Date('2024-03-15')
-    },
-    {
-        name: 'Gaming Mouse',
-        price: 49.99,
-        stock: 15,
-        category: 'Electronics',
-        image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200',
-        status: 'pending',
-        seller: sellerId,
-        description: 'RGB gaming mouse with programmable buttons',
-        actionLogs: [{
-            action: 'create',
-            performedBy: sellerId,
-            reason: 'New product submission',
-            createdAt: new Date('2024-03-18')
-        }],
-        createdAt: new Date('2024-03-18'),
-        updatedAt: new Date('2024-03-18')
-    },
-    {
-        name: 'Mechanical Keyboard',
-        price: 129.99,
-        stock: 0,
-        category: 'Electronics',
-        image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=200',
-        status: 'rejected',
-        seller: sellerId,
-        description: 'Mechanical gaming keyboard with RGB backlight',
-        rejectionReason: 'Insufficient product documentation',
-        actionLogs: [
-            {
-                action: 'create',
-                performedBy: sellerId,
-                reason: 'New product submission',
-                createdAt: new Date('2024-03-16')
-            },
-            {
-                action: 'reject',
-                performedBy: adminId,
-                reason: 'Missing certification documents',
-                createdAt: new Date('2024-03-16')
-            }
-        ],
-        createdAt: new Date('2024-03-16'),
-        updatedAt: new Date('2024-03-16')
-    }
-];
+        createdAt,
+        updatedAt: createdAt
+      };
 
-const seedProducts = async () => {
-    try {
-        // Connect to MongoDB
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Connected to MongoDB');
-
-        // Find a seller user and an admin user
-        const seller = await User.findOne({ role: 'seller', isApproved: true });
-        const admin = await User.findOne({ role: 'admin' });
-        
-        if (!seller) {
-            throw new Error('No approved seller found. Please run userSeeder first.');
-        }
-        if (!admin) {
-            throw new Error('No admin user found. Please run userSeeder first.');
-        }
-
-        // Clear existing products
-        await Product.deleteMany({});
-        console.log('Cleared existing products');
-
-        // Create products with the seller ID and admin ID
-        const products = await createProducts(seller._id, admin._id);
-        const createdProducts = await Product.insertMany(products);
-
-        console.log(`${createdProducts.length} products seeded successfully`);
-
-        // Log sample product IDs for reference
-        console.log('Sample Product IDs:');
-        createdProducts.forEach(product => {
-            console.log(`${product.name}: ${product._id}`);
+      if (status === 'approved') {
+        product.actionLogs.push({
+          action: 'approve',
+          performedBy: admin._id,
+          reason: 'Product meets all requirements',
+          createdAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000)
         });
+      } else if (status === 'rejected') {
+        product.actionLogs.push({
+          action: 'reject',
+          performedBy: admin._id,
+          reason: 'Insufficient product documentation',
+          createdAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000)
+        });
+      } else if (status === 'flagged') {
+        product.actionLogs.push({
+          action: 'flag',
+          performedBy: admin._id,
+          reason: 'Potential policy violation',
+          createdAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000)
+        });
+        product.flaggedReasons = ['Suspected counterfeit'];
+      }
 
-        process.exit(0);
-    } catch (error) {
-        console.error('Error seeding products:', error);
-        process.exit(1);
+      products.push(product);
     }
+  });
+
+  return products;
 };
 
-seedProducts(); 
+const seedProducts = async (existingUsers = null) => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
+
+    // Get or use existing users
+    const users = existingUsers || await seedUsers();
+    const { sellers, admin } = users;
+
+    if (!sellers.length || !admin) {
+      throw new Error('Required users not found. Please run userSeeder first.');
+    }
+
+    await Product.deleteMany({});
+    console.log('Cleared existing products');
+
+    const products = await createProducts(sellers, admin);
+    const createdProducts = await Product.insertMany(products);
+
+    console.log(`${createdProducts.length} products seeded successfully`);
+
+    // Return the created products for use in order seeder
+    return {
+      products: createdProducts,
+      users
+    };
+  } catch (error) {
+    console.error('Error seeding products:', error);
+    throw error;
+  }
+};
+
+// Export for use in other seeders
+module.exports = seedProducts;
+
+// Run directly if this script is executed directly
+if (require.main === module) {
+  seedProducts()
+    .then(() => {
+      mongoose.connection.close();
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error(error);
+      mongoose.connection.close();
+      process.exit(1);
+    });
+} 
