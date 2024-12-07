@@ -1,6 +1,7 @@
 const express = require('express');
 const { isAuthenticated, isAdmin } = require('../Middleware/auth');
 const userController = require('../Controllers/userController');
+const { protect } = require('../Middleware/protect');
 
 const router = express.Router();
 
@@ -22,6 +23,13 @@ router.get('/buyers', isAuthenticated, isAdmin, userController.getBuyers);
 router.get('/buyers/pending', isAuthenticated, isAdmin, userController.getPendingBuyers);
 router.post('/buyers/:id/verify', isAuthenticated, isAdmin, userController.verifyBuyer);
 
+router.get('/profile',protect , userController.getUserProfile);
+router.put('/profile' ,protect ,userController.updateUserProfile);
+router.get('/orders' ,protect ,userController.getUserOrders);
+router.use('/products', require('./products.js'));
+
+router.post('/signup', userController.signup);
+router.post('/login', userController.login);
 // Export route
 router.post('/export', isAuthenticated, isAdmin, userController.exportUserList);
 

@@ -259,6 +259,97 @@ const updateProduct = async (req, res) => {
         });
     }
 };
+const getProductById = (async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400);
+        throw new Error('Invalid product ID');
+    }
+    const product = await Product.findById(req.params.id)
+        .populate('seller', 'name email');
+    
+    if (product) {
+        res.json(product);
+    } else {
+        res.status(404);
+        throw new Error('Product not found');
+    }
+});
+
+// @desc    Create a product
+// @route   POST /api/products
+// @access  Private
+const createProduct = (async (req, res) => {
+    const { name, price, stock, category, images } = req.body;
+
+    const product = await Product.create({
+        name,
+        price,
+        stock,
+        category,
+        images,
+        seller: req.user._id
+    });
+
+    res.status(201).json(product);
+});
+
+// @desc    Search products by keyword
+// @route   GET /api/products/search
+// @access  Public
+
+const searchProducts = (async (req, res) => {
+    const {q: keyword } = req.query;
+    
+    if (!keyword) {
+        res.status(400);
+        throw new Error('Please provide a search keyword');
+    }
+    // Create a regex pattern for case-insensitive search
+    const searchPattern = new RegExp(keyword, 'i');
+    // First search in name (title)
+    let products = await Product.find({ name: searchPattern })
+        .populate('seller', 'name email')
+        .sort('-createdAt');
+    // If no products found in name, search in description and category
+    if (products.length === 0) {
+        products = await Product.find({
+            $or: [
+                { description: searchPattern },
+                { category: searchPattern }
+            ]
+        })
+        .populate('seller', 'name email')
+        .sort('-createdAt');
+    }
+    res.json(products);
+});
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private
+
+const deleteProduct = (async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400);
+        throw new Error('Invalid product ID');
+    }
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+        res.status(404);
+        throw new Error('Product not found');
+    }
+
+    if (product.seller.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to delete this product');
+    }
+
+    await product.deleteOne();
+    res.json({ message: 'Product removed' });
+});
+
 
 module.exports = {
     getProducts,
@@ -266,5 +357,9 @@ module.exports = {
     approveProduct,
     rejectProduct,
     takeAction,
-    updateProduct
+    updateProduct,
+    getProductById,
+    createProduct,
+    searchProducts,
+    deleteProduct
 }; 

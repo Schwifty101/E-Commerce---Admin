@@ -11,5 +11,8 @@ router.post('/:id/approve', isAuthenticated, isAdmin, productController.approveP
 router.post('/:id/reject', isAuthenticated, isAdmin, productController.rejectProduct);
 router.post('/:id/action', isAuthenticated, isAdmin, productController.takeAction);
 router.patch('/:id', isAuthenticated, isAdmin, productController.updateProduct);
-
+router.get('/getProduct/:id',isAuthenticated ,productController.getProductById);
+router.delete('/deleteProduct/:id', isAuthenticated, productController.deleteProduct);
+router.get('/search', isAuthenticated,productController.searchProducts);
+router.post('/', isAuthenticated, productController.createProduct);
 module.exports = router; 
