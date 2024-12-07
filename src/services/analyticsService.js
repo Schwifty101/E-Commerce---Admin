@@ -18,52 +18,104 @@ export const analyticsService = {
         }
     },
 
-    getRevenueAnalytics: async (period = '30days') => {
+    getRevenueAnalytics: async ({ period }) => {
         try {
             const response = await axios.get(`${BASE_URL}/revenue`, {
-                params: { period },
-                withCredentials: true
-            });
-
-            return response.data.data;
-        } catch (error) {
-            console.error('Error fetching revenue analytics:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch revenue analytics');
-        }
-    },
-
-    getUserActivity: async (period = '24hours') => {
-        try {
-            const response = await axios.get(`${BASE_URL}/user-activity`, {
-                params: { period },
-                withCredentials: true
-            });
-
-            return response.data.data;
-        } catch (error) {
-            console.error('Error fetching user activity:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch user activity');
-        }
-    },
-
-    getTopProducts: async ({
-        period = '30days',
-        limit = 10,
-        sortBy = 'revenue'
-    } = {}) => {
-        try {
-            const response = await axios.get(`${BASE_URL}/top-products`, {
                 params: {
-                    period,
-                    limit,
-                    sortBy
+                    period: period || '30days'
                 },
                 withCredentials: true
             });
 
-            return response.data.data;
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                summary: {
+                    ...data.summary,
+                    conversionMetrics: data.summary.conversionMetrics || {
+                        visitToCart: 0,
+                        cartToOrder: 0,
+                        orderToDelivery: 0
+                    }
+                },
+                dailyData: data.dailyData.map(day => ({
+                    date: new Date(day.date),
+                    totalRevenue: day.revenue,
+                    orderCount: day.orders.total,
+                    growth: day.growth,
+                    hourlyRevenue: day.hourlyRevenue
+                }))
+            };
+        } catch (error) {
+            console.error('Error fetching revenue analytics:', error);
+            console.error('Response data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Failed to fetch revenue analytics');
+        }
+    },
+
+    getUserActivity: async ({ period }) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/user-activity`, {
+                params: {
+                    period: period || '30days'
+                },
+                withCredentials: true
+            });
+
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                summary: {
+                    totalActive: data.summary.totalActive || 0,
+                    newUsers: data.summary.newUsers || 0,
+                    buyers: data.summary.buyers || 0,
+                    sellers: data.summary.sellers || 0
+                },
+                hourlyActivity: data.hourlyActivity || []
+            };
+        } catch (error) {
+            console.error('Error fetching user activity:', error);
+            console.error('Response data:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Failed to fetch user activity');
+        }
+    },
+
+    getTopProducts: async ({ period, limit = 10, sortBy = 'revenue' }) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/top-products`, {
+                params: { period, limit, sortBy },
+                withCredentials: true
+            });
+
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                products: data.topProducts.map(product => ({
+                    productId: product._id,
+                    name: product.name,
+                    category: product.category,
+                    image: product.image,
+                    stats: {
+                        totalSales: product.totalSales,
+                        totalRevenue: product.totalRevenue
+                    }
+                }))
+            };
         } catch (error) {
             console.error('Error fetching top products:', error);
+            console.error('Response data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Failed to fetch top products');
         }
     },

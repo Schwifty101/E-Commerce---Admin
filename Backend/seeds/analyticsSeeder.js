@@ -1,146 +1,164 @@
 const mongoose = require('mongoose');
 const Analytics = require('../Models/Analytics');
-const Order = require('../models/Order');
+const Order = require('../Models/Order');
 const User = require('../models/User');
 const { Product } = require('../Models/Product');
-const seedOrders = require('./orderSeeder');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-const generateDailyAnalytics = async (orders, users, products, date) => {
-    const dayStart = new Date(date.setHours(0, 0, 0, 0));
-    const dayEnd = new Date(date.setHours(23, 59, 59, 999));
-    
-    // Filter orders for the specific date
-    const dailyOrders = orders.filter(order => 
-        order.createdAt >= dayStart && order.createdAt <= dayEnd
-    );
+const generateDailyAnalytics = async (date) => {
+    try {
+        const dayStart = new Date(date.setHours(0, 0, 0, 0));
+        const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+        
+        // Get real orders for the day
+        const dailyOrders = await Order.find({
+            createdAt: { $gte: dayStart, $lte: dayEnd }
+        }).populate('customer vendor items.productId');
 
-    // Calculate order metrics by status
-    const orderMetrics = {
-        total: dailyOrders.length,
-        pending: dailyOrders.filter(o => o.status === 'pending').length,
-        processing: dailyOrders.filter(o => o.status === 'processing').length,
-        shipped: dailyOrders.filter(o => o.status === 'shipped').length,
-        delivered: dailyOrders.filter(o => o.status === 'delivered').length,
-        cancelled: dailyOrders.filter(o => o.status === 'cancelled').length,
-        returned: dailyOrders.filter(o => o.status === 'returned').length
-    };
+        // Get previous day orders for growth calculation
+        const previousDay = new Date(dayStart);
+        previousDay.setDate(previousDay.getDate() - 1);
+        const previousDayEnd = new Date(previousDay);
+        previousDayEnd.setHours(23, 59, 59, 999);
 
-    // Calculate revenue metrics
-    const totalRevenue = dailyOrders.reduce((sum, order) => 
-        order.status === 'delivered' ? sum + order.total : sum, 0
-    );
-
-    // Calculate previous day's revenue for growth
-    const previousDay = new Date(dayStart);
-    previousDay.setDate(previousDay.getDate() - 1);
-    const previousDayEnd = new Date(previousDay);
-    previousDayEnd.setHours(23, 59, 59, 999);
-
-    const previousDayOrders = orders.filter(order => 
-        order.createdAt >= previousDay && order.createdAt <= previousDayEnd &&
-        order.status === 'delivered'
-    );
-    const previousDayRevenue = previousDayOrders.reduce((sum, order) => sum + order.total, 0);
-    
-    const revenueGrowth = previousDayRevenue ? 
-        ((totalRevenue - previousDayRevenue) / previousDayRevenue) * 100 : 0;
-
-    // Calculate user metrics
-    const activeUsers = users.filter(user => 
-        user.lastLogin >= dayStart && user.lastLogin <= dayEnd
-    ).length;
-
-    const newUsers = users.filter(user => 
-        user.createdAt >= dayStart && user.createdAt <= dayEnd
-    ).length;
-
-    const buyersCount = users.filter(user => user.role === 'buyer' && !user.isBanned).length;
-    const sellersCount = users.filter(user => user.role === 'seller' && user.isApproved).length;
-
-    // Calculate product metrics
-    const productMetrics = {
-        total: products.length,
-        approved: products.filter(p => p.status === 'approved').length,
-        pending: products.filter(p => p.status === 'pending').length,
-        flagged: products.filter(p => p.status === 'flagged').length
-    };
-
-    // Generate top products data
-    const productMap = new Map();
-    dailyOrders.forEach(order => {
-        order.items.forEach(item => {
-            if (!item.productId) return;
-            const productId = item.productId._id || item.productId;
-            const existing = productMap.get(productId.toString()) || { sales: 0, revenue: 0 };
-            existing.sales += item.quantity;
-            existing.revenue += item.subtotal;
-            productMap.set(productId.toString(), existing);
+        const previousDayOrders = await Order.find({
+            createdAt: { $gte: previousDay, $lte: previousDayEnd },
+            status: 'delivered'
         });
-    });
 
-    const topProducts = Array.from(productMap.entries())
-        .map(([productId, data]) => ({
-            productId: new mongoose.Types.ObjectId(productId),
-            sales: data.sales,
-            revenue: data.revenue
-        }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+        // Calculate revenue metrics
+        const calculateRevenueMetrics = (dailyOrders) => {
+            const totalRevenue = dailyOrders.reduce((sum, order) => 
+                sum + order.total, 0
+            );
 
-    // Generate hourly user activity
-    const userActivity = Array.from({ length: 24 }, (_, hour) => ({
-        hour,
-        activeUsers: Math.floor(Math.random() * 50) + (hour >= 9 && hour <= 18 ? 50 : 10)
-    }));
+            const completedOrders = dailyOrders.filter(order => 
+                order.status !== 'cancelled' && order.status !== 'returned'
+            );
 
-    // Generate system logs from orders and user actions
-    const systemLogs = dailyOrders.map(order => ({
-        userId: order.customer,
-        action: 'order_created',
-        timestamp: order.createdAt,
-        ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
-    }));
+            const averageRevenue = completedOrders.length > 0 ? 
+                totalRevenue / completedOrders.length : 0;
 
-    return {
-        date,
-        metrics: {
-            revenue: {
+            return {
                 total: totalRevenue,
-                growth: revenueGrowth
+                average: averageRevenue,
+                orderCount: completedOrders.length
+            };
+        };
+
+        const revenueMetrics = calculateRevenueMetrics(dailyOrders);
+
+        const previousDayRevenue = previousDayOrders.reduce((sum, order) => 
+            sum + order.total, 0
+        );
+
+        const revenueGrowth = previousDayRevenue ? 
+            ((revenueMetrics.total - previousDayRevenue) / previousDayRevenue) * 100 : 0;
+
+        // Get user metrics for the day
+        const [activeUsers, newUsers, buyers, sellers] = await Promise.all([
+            User.countDocuments({ isBanned: false }),
+            User.countDocuments({ 
+                createdAt: { $gte: dayStart, $lte: dayEnd },
+                isBanned: false 
+            }),
+            User.countDocuments({ role: 'buyer', isBanned: false }),
+            User.countDocuments({ role: 'seller', isApproved: true })
+        ]);
+
+        // Get product metrics
+        const [totalProducts, approvedProducts, pendingProducts, flaggedProducts] = await Promise.all([
+            Product.countDocuments(),
+            Product.countDocuments({ status: 'approved' }),
+            Product.countDocuments({ status: 'pending' }),
+            Product.countDocuments({ status: 'flagged' })
+        ]);
+
+        // Calculate top products from orders
+        const productSalesMap = new Map();
+        for (const order of dailyOrders) {
+            for (const item of order.items) {
+                const productId = item.productId._id.toString();
+                const existing = productSalesMap.get(productId) || {
+                    productId: item.productId._id,
+                    name: item.productId.name,
+                    category: item.productId.category,
+                    image: item.productId.image,
+                    stats: { totalSales: 0, totalRevenue: 0 }
+                };
+
+                existing.stats.totalSales += item.quantity;
+                existing.stats.totalRevenue += item.subtotal;
+                productSalesMap.set(productId, existing);
+            }
+        }
+
+        // Generate hourly activity based on order timestamps
+        const hourlyActivity = Array.from({ length: 24 }, (_, hour) => {
+            const hourOrders = dailyOrders.filter(order => 
+                order.createdAt.getHours() === hour
+            );
+
+            return {
+                hour,
+                activeUsers: Math.max(
+                    hourOrders.length * 3, // Assume each order represents multiple active users
+                    Math.floor(activeUsers * (hour >= 9 && hour <= 17 ? 0.3 : 0.1))
+                ),
+                orderCount: hourOrders.length,
+                revenue: hourOrders.reduce((sum, order) => sum + order.total, 0)
+            };
+        });
+
+        return {
+            date,
+            metrics: {
+                revenue: {
+                    total: revenueMetrics.total,
+                    average: revenueMetrics.average,
+                    growth: revenueGrowth,
+                    orderCount: revenueMetrics.orderCount
+                },
+                orders: {
+                    total: dailyOrders.length,
+                    pending: dailyOrders.filter(o => o.status === 'pending').length,
+                    processing: dailyOrders.filter(o => o.status === 'processing').length,
+                    shipped: dailyOrders.filter(o => o.status === 'shipped').length,
+                    delivered: dailyOrders.filter(o => o.status === 'delivered').length,
+                    cancelled: dailyOrders.filter(o => o.status === 'cancelled').length,
+                    returned: dailyOrders.filter(o => o.status === 'returned').length
+                },
+                users: {
+                    active: activeUsers,
+                    new: newUsers,
+                    buyers,
+                    sellers
+                },
+                products: {
+                    total: totalProducts,
+                    approved: approvedProducts,
+                    pending: pendingProducts,
+                    flagged: flaggedProducts
+                }
             },
-            orders: orderMetrics,
-            users: {
-                active: activeUsers,
-                new: newUsers,
-                buyers: buyersCount,
-                sellers: sellersCount
-            },
-            products: productMetrics
-        },
-        topProducts,
-        userActivity,
-        systemLogs
-    };
+            topProducts: Array.from(productSalesMap.values())
+                .sort((a, b) => b.stats.totalRevenue - a.stats.totalRevenue)
+                .slice(0, 5),
+            userActivity: hourlyActivity,
+            systemLogs: []
+        };
+    } catch (error) {
+        console.error('Error generating daily analytics:', error);
+        throw error;
+    }
 };
 
 const seedAnalytics = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
-
-        // Get or create required data
-        let orders = await Order.find().populate('items.productId customer');
-        if (!orders.length) {
-            console.log('No orders found, seeding orders first...');
-            await seedOrders();
-            orders = await Order.find().populate('items.productId customer');
-        }
-
-        const users = await User.find();
-        const products = await Product.find();
 
         // Clear existing analytics
         await Analytics.deleteMany({});
@@ -153,11 +171,12 @@ const seedAnalytics = async () => {
         for (let i = 30; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
-            const dailyAnalytics = await generateDailyAnalytics(orders, users, products, date);
+            console.log(`Generating analytics for ${date.toISOString().split('T')[0]}`);
+            
+            const dailyAnalytics = await generateDailyAnalytics(date);
             analyticsData.push(dailyAnalytics);
         }
 
-        // Insert analytics data
         const createdAnalytics = await Analytics.insertMany(analyticsData);
         console.log(`${createdAnalytics.length} days of analytics data seeded successfully`);
 

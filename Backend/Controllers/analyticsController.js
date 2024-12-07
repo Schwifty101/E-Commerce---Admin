@@ -1,4 +1,42 @@
 const Analytics = require('../Models/Analytics');
+const Product = require('../Models/Product').Product;
+
+// Add these helper functions at the top of the file
+const convertToCSV = (data) => {
+    if (!data || !data.length) return '';
+    
+    const headers = Object.keys(data[0]);
+    const rows = [
+        headers.join(','), // header row
+        ...data.map(row => 
+            headers.map(header => {
+                let cell = row[header];
+                // Handle numbers, dates, and strings appropriately
+                if (typeof cell === 'number') return cell;
+                if (cell instanceof Date) return cell.toISOString();
+                // Escape quotes and commas in strings
+                return `"${String(cell).replace(/"/g, '""')}"`;
+            }).join(',')
+        )
+    ];
+    
+    return rows.join('\n');
+};
+
+const convertMultipleDataToCSV = (data) => {
+    let csvContent = '';
+    
+    // Handle each data type separately
+    for (const [key, values] of Object.entries(data)) {
+        if (values && values.length) {
+            csvContent += `\n${key.toUpperCase()}\n`;
+            csvContent += convertToCSV(values);
+            csvContent += '\n\n';
+        }
+    }
+    
+    return csvContent.trim();
+};
 
 // Create controller as an object with methods instead of a class
 const analyticsController = {
@@ -8,43 +46,10 @@ const analyticsController = {
             const today = new Date();
             const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
 
-            // Get current month's stats
-            const currentStats = await Analytics.aggregate([
-                {
-                    $match: {
-                        date: { $gte: lastMonth, $lte: today }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalRevenue: { $sum: '$metrics.revenue.total' },
-                        activeUsers: { $sum: '$metrics.users.active' },
-                        totalOrders: { $sum: '$metrics.orders.total' },
-                        totalOrderValue: { $sum: '$metrics.revenue.total' },
-                        orderCount: { $sum: '$metrics.orders.total' }
-                    }
-                }
-            ]);
-
-            // Calculate growth rates
+            // Use the new getDateRangeMetrics method
+            const currentStats = await Analytics.getDateRangeMetrics(lastMonth, today);
             const previousMonth = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
-            const previousStats = await Analytics.aggregate([
-                {
-                    $match: {
-                        date: { $gte: previousMonth, $lt: lastMonth }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalRevenue: { $sum: '$metrics.revenue.total' },
-                        activeUsers: { $sum: '$metrics.users.active' },
-                        totalOrders: { $sum: '$metrics.orders.total' },
-                        totalOrderValue: { $sum: '$metrics.revenue.total' }
-                    }
-                }
-            ]);
+            const previousStats = await Analytics.getDateRangeMetrics(previousMonth, lastMonth);
 
             const current = currentStats[0] || {
                 totalRevenue: 0,
@@ -84,8 +89,8 @@ const analyticsController = {
                         totalRevenue: current.totalRevenue,
                         activeUsers: current.activeUsers,
                         totalOrders: current.totalOrders,
-                        averageOrderValue: current.orderCount 
-                            ? current.totalOrderValue / current.orderCount 
+                        averageOrderValue: current.orderCount
+                            ? current.totalOrderValue / current.orderCount
                             : 0
                     },
                     growth
@@ -124,6 +129,7 @@ const analyticsController = {
                     startDate = new Date(today.setDate(today.getDate() - 30));
             }
 
+            // Use the new Order model method for revenue analytics
             const revenueData = await Analytics.aggregate([
                 {
                     $match: {
@@ -131,63 +137,59 @@ const analyticsController = {
                     }
                 },
                 {
-                    $group: {
-                        _id: {
-                            year: { $year: "$date" },
-                            month: { $month: "$date" },
-                            day: { $dayOfMonth: "$date" }
-                        },
-                        totalRevenue: { $sum: "$metrics.revenue.total" },
-                        orderCount: { $sum: "$metrics.orders.total" },
-                        avgOrderValue: {
-                            $avg: {
-                                $cond: [
-                                    { $eq: ["$metrics.orders.total", 0] },
-                                    0,
-                                    { $divide: ["$metrics.revenue.total", "$metrics.orders.total"] }
-                                ]
-                            }
-                        }
-                    }
-                },
-                {
-                    $sort: {
-                        "_id.year": 1,
-                        "_id.month": 1,
-                        "_id.day": 1
-                    }
-                },
-                {
                     $project: {
-                        _id: 0,
-                        date: {
-                            $dateFromParts: {
-                                year: "$_id.year",
-                                month: "$_id.month",
-                                day: "$_id.day"
-                            }
-                        },
-                        totalRevenue: 1,
-                        orderCount: 1,
-                        avgOrderValue: 1
+                        date: 1,
+                        totalRevenue: "$metrics.revenue.total",
+                        revenueGrowth: "$metrics.revenue.growth",
+                        orderMetrics: "$metrics.orders",
+                        dailyMetrics: 1  // Include new daily metrics
                     }
+                },
+                {
+                    $sort: { date: 1 }
                 }
             ]);
+
+            // Include hourly revenue data in response
+            const dailyData = revenueData.map(day => ({
+                date: day.date,
+                revenue: day.totalRevenue,
+                growth: day.revenueGrowth,
+                orders: day.orderMetrics,
+                hourlyRevenue: day.dailyMetrics?.revenue || []
+            }));
 
             // Calculate summary statistics
             const summary = {
                 totalRevenue: revenueData.reduce((sum, day) => sum + day.totalRevenue, 0),
-                totalOrders: revenueData.reduce((sum, day) => sum + day.orderCount, 0),
+                totalOrders: revenueData.reduce((sum, day) => sum + day.orderMetrics.total, 0),
                 avgOrderValue: revenueData.length > 0
-                    ? revenueData.reduce((sum, day) => sum + day.avgOrderValue, 0) / revenueData.length
-                    : 0
+                    ? revenueData.reduce((sum, day) => 
+                        sum + (day.totalRevenue / (day.orderMetrics.total || 1)), 0) / revenueData.length
+                    : 0,
+                ordersByStatus: {
+                    pending: revenueData.reduce((sum, day) => sum + day.orderMetrics.pending, 0),
+                    processing: revenueData.reduce((sum, day) => sum + day.orderMetrics.processing, 0),
+                    shipped: revenueData.reduce((sum, day) => sum + day.orderMetrics.shipped, 0),
+                    delivered: revenueData.reduce((sum, day) => sum + day.orderMetrics.delivered, 0),
+                    cancelled: revenueData.reduce((sum, day) => sum + day.orderMetrics.cancelled, 0),
+                    returned: revenueData.reduce((sum, day) => sum + day.orderMetrics.returned, 0)
+                },
+                averageGrowth: revenueData.length > 0
+                    ? revenueData.reduce((sum, day) => sum + day.revenueGrowth, 0) / revenueData.length
+                    : 0,
+                conversionMetrics: revenueData[0]?.conversionMetrics || {
+                    visitToCart: 0,
+                    cartToOrder: 0,
+                    orderToDelivery: 0
+                }
             };
 
             res.json({
                 success: true,
                 data: {
                     summary,
-                    dailyData: revenueData
+                    dailyData
                 }
             });
 
@@ -336,139 +338,74 @@ const analyticsController = {
 
     getTopProducts: async (req, res) => {
         try {
-            const { 
-                period = '30days',
-                limit = 10,
-                sortBy = 'revenue' // 'revenue' or 'sales'
-            } = req.query;
-
+            const { period = '30days', limit = 10, sortBy = 'revenue' } = req.query;
             const today = new Date();
-            let startDate;
+            let startDate = new Date();
 
-            // Set time period for analysis
+            // Calculate start date based on period
             switch (period) {
                 case '7days':
-                    startDate = new Date(today.setDate(today.getDate() - 7));
+                    startDate.setDate(today.getDate() - 7);
                     break;
                 case '90days':
-                    startDate = new Date(today.setDate(today.getDate() - 90));
+                    startDate.setDate(today.getDate() - 90);
                     break;
                 case '12months':
-                    startDate = new Date(today.setMonth(today.getMonth() - 12));
+                    startDate.setMonth(today.getMonth() - 12);
                     break;
-                default: // 30 days
-                    startDate = new Date(today.setDate(today.getDate() - 30));
+                default: // 30days
+                    startDate.setDate(today.getDate() - 30);
             }
 
-            // Aggregate top products data
-            const topProducts = await Analytics.aggregate([
-                {
-                    $match: {
-                        date: { $gte: startDate, $lte: new Date() }
-                    }
-                },
-                {
-                    $unwind: '$topProducts'
-                },
-                {
-                    $group: {
-                        _id: '$topProducts.productId',
-                        totalSales: { $sum: '$topProducts.sales' },
-                        totalRevenue: { $sum: '$topProducts.revenue' }
-                    }
-                },
-                {
-                    $sort: sortBy === 'sales' 
-                        ? { totalSales: -1 } 
-                        : { totalRevenue: -1 }
-                },
-                {
-                    $limit: parseInt(limit)
-                },
-                {
-                    $lookup: {
-                        from: 'products',
-                        localField: '_id',
-                        foreignField: '_id',
-                        as: 'productDetails'
-                    }
-                },
-                {
-                    $unwind: '$productDetails'
-                },
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'productDetails.seller',
-                        foreignField: '_id',
-                        as: 'sellerDetails'
-                    }
-                },
-                {
-                    $unwind: '$sellerDetails'
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        productId: '$_id',
-                        name: '$productDetails.name',
-                        category: '$productDetails.category',
-                        price: '$productDetails.price',
-                        image: '$productDetails.image',
-                        seller: {
-                            id: '$sellerDetails._id',
-                            name: '$sellerDetails.name',
-                            companyName: '$sellerDetails.businessDetails.companyName'
-                        },
-                        stats: {
-                            totalSales: '$totalSales',
-                            totalRevenue: '$totalRevenue',
-                            averageOrderValue: {
-                                $divide: ['$totalRevenue', '$totalSales']
-                            }
-                        }
-                    }
-                }
-            ]);
+            // Pass sortBy parameter to the model method
+            const topProducts = await Product.getTopSellingProducts(
+                startDate,
+                today,
+                parseInt(limit),
+                sortBy
+            );
 
-            // Calculate overall statistics
-            const totalStats = topProducts.reduce((acc, product) => {
-                acc.totalSales += product.stats.totalSales;
-                acc.totalRevenue += product.stats.totalRevenue;
-                return acc;
-            }, { totalSales: 0, totalRevenue: 0 });
+            // If no products found, return empty array instead of error
+            if (!topProducts || topProducts.length === 0) {
+                return res.json({
+                    success: true,
+                    data: {
+                        topProducts: []
+                    }
+                });
+            }
 
             res.json({
                 success: true,
                 data: {
-                    products: topProducts,
-                    summary: {
-                        ...totalStats,
-                        averageOrderValue: totalStats.totalSales > 0 
-                            ? totalStats.totalRevenue / totalStats.totalSales 
-                            : 0,
-                        period,
-                        topPerformer: topProducts[0] || null
-                    }
+                    topProducts: topProducts.map(product => ({
+                        _id: product._id,
+                        name: product.name || 'Unknown Product',
+                        category: product.category || 'Uncategorized',
+                        image: product.image || 'https://via.placeholder.com/150',
+                        totalSales: product.totalSales || 0,
+                        totalRevenue: product.totalRevenue || 0
+                    }))
                 }
             });
 
         } catch (error) {
-            console.error('Error fetching top products:', error);
+            console.error('Error in getTopProducts:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error fetching top products',
-                error: error.message
+                error: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     },
 
     exportData: async (req, res) => {
         try {
-            const { 
-                type = 'all',  // all, revenue, orders, users, products
+            const {
+                type = 'all',
                 period = '30days',
-                format = 'csv' // currently only supporting csv
+                format = 'csv'
             } = req.query;
 
             const today = new Date();
@@ -622,20 +559,20 @@ const analyticsController = {
                 });
             }
 
-            // Set headers for file download
+            // Update the response headers
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+            res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
-            // Convert data to CSV format
-            const csvData = type === 'all' 
+            const csvData = type === 'all'
                 ? convertMultipleDataToCSV(data)
                 : convertToCSV(data);
 
-            res.send(csvData);
+            return res.send(csvData);
 
         } catch (error) {
             console.error('Error exporting analytics data:', error);
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error exporting analytics data',
                 error: error.message

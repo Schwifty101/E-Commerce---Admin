@@ -1,4 +1,4 @@
-const { orderStatusSchema, returnActionSchema, dateRangeSchema, exportRequestSchema } = require('../utils/validation');
+const { orderStatusSchema, returnActionSchema, dateRangeSchema, exportRequestSchema, periodSchema } = require('../utils/validation');
 
 const validateOrderStatus = (req, res, next) => {
   const { error } = orderStatusSchema.validate(req.body);
@@ -34,6 +34,17 @@ const validateDateRange = (req, res, next) => {
   next();
 };
 
+const validatePeriod = (req, res, next) => {
+  const { error } = periodSchema.validate(req.query);
+  if (error) {
+    return res.status(400).json({
+      message: 'Invalid period parameters',
+      details: error.details[0].message
+    });
+  }
+  next();
+};
+
 const validateExportRequest = (req, res, next) => {
   const { error } = exportRequestSchema.validate({
     type: req.params.type,
@@ -52,5 +63,6 @@ module.exports = {
   validateOrderStatus,
   validateReturnAction,
   validateDateRange,
+  validatePeriod,
   validateExportRequest
 };
