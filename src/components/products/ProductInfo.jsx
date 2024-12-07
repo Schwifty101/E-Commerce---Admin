@@ -1,8 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, Truck, Shield, Heart } from 'lucide-react';
 import { formatPrice } from '../../utils/formatPrice';
 
 export function ProductInfo({ product }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAddToCart = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Please login to add items to cart');
+      }
+
+      const response = await fetch(`http://127.0.0.1:3000/api/users/cart/${product._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          quantity: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add to cart');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        alert(result.message); // "Product added to cart successfully"
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="product-info">
       <h1 className="product-info-title">{product.name}</h1>
@@ -39,7 +78,9 @@ export function ProductInfo({ product }) {
       </div>
 
       <div className="product-actions">
-        <button className="primary-button">Add to Cart</button>
+        <button className="primary-button"
+        onClick={handleAddToCart}
+        >Add to Cart</button>
         <button className="secondary-button">
           <Heart size={20} />
           Add to Wishlist

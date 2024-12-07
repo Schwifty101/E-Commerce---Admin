@@ -483,10 +483,44 @@ const login = async (req, res, next) => {
   }
 };
 
+const addToCart = async (req, res, next) => {
+  try {
+    const { quantity = 1 } = req.body;
+    const productId = req.params.productId;
 
+    // Find user and update cart
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
 
+    // Check if product already exists in cart
+    const existingCartItem = user.cart.find(
+      item => item.product.toString() === productId
+    );
 
+    if (existingCartItem) {
+      // Update quantity if product exists
+      existingCartItem.quantity += quantity;
+    } else {
+      // Add new product to cart
+      user.cart.push({
+        product: productId,
+        quantity: quantity
+      });
+    }
 
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Product added to cart successfully',
+      data: user.cart
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   getAllUsers,
@@ -511,5 +545,6 @@ module.exports = {
   getCartProducts,
   getCartTotal,
   signup,
-  login
+  login,
+  addToCart
 }; 

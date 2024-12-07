@@ -37,4 +37,7 @@ router.post('/login', userController.login);
 // Export route
 router.post('/export', isAuthenticated, isAdmin, userController.exportUserList);
 
+// Cart routes
+router.post('/cart/:productId', protect, userController.addToCart);
+
 module.exports = router; 
