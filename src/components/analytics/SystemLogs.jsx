@@ -1,91 +1,93 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
 import { analyticsService } from '../../services/analyticsService';
+import Table from '../common/Table';
+import { format } from 'date-fns';
 
-const SystemLogs = ({ dateRange = { from: new Date(), to: new Date() } }) => {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+const SystemLogs = ({ dateRange }) => {
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        userType: 'all',
+        activityType: 'all'
+    });
 
-  useEffect(() => {
+    useEffect(() => {
+        if (dateRange.from && dateRange.to) {
+            fetchLogs();
+        }
+    }, [dateRange, filters]);
+
     const fetchLogs = async () => {
-      if (!dateRange?.from || !dateRange?.to) {
-        console.warn('Invalid date range provided to SystemLogs');
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        const data = await analyticsService.getSystemLogs(dateRange);
-        setLogs(prev => page === 1 ? data.logs : [...prev, ...data.logs]);
-        setHasMore(data.hasMore);
-      } catch (error) {
-        console.error('Failed to fetch system logs:', error);
-      } finally {
-        setLoading(false);
-      }
+        try {
+            setLoading(true);
+            const data = await analyticsService.getSystemLogs({
+                from: dateRange.from,
+                to: dateRange.to,
+                ...filters
+            });
+            setLogs(data);
+        } catch (error) {
+            console.error('Failed to fetch logs:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    fetchLogs();
-  }, [dateRange, page]);
+    const columns = [
+        {
+            Header: 'User',
+            accessor: 'userName',
+        },
+        {
+            Header: 'Activity',
+            accessor: 'activity',
+            Cell: ({ value }) => (
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    {value}
+                </span>
+            )
+        },
+        {
+            Header: 'Timestamp',
+            accessor: 'timestamp',
+            Cell: ({ value }) => format(new Date(value), 'MMM dd, yyyy HH:mm:ss')
+        },
+        {
+            Header: 'IP Address',
+            accessor: 'ipAddress'
+        }
+    ];
 
-  const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
-  if (loading && page === 1) {
-    return <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="animate-pulse space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-16 bg-gray-100 rounded"></div>
-        ))}
-      </div>
-    </div>;
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">System Logs</h3>
-      <div className="space-y-4">
-        {logs.map((log, index) => (
-          <div key={index} className="border-b pb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-medium text-gray-900">{log.action}</p>
-                <p className="text-sm text-gray-500">{log.description}</p>
-              </div>
-              <span className="text-sm text-gray-400">
-                {formatTimestamp(log.timestamp)}
-              </span>
+    return (
+        <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold">System Activity Logs</h2>
+                <div className="flex space-x-4">
+                    <select
+                        value={filters.userType}
+                        onChange={(e) => setFilters({ ...filters, userType: e.target.value })}
+                        className="px-3 py-2 border rounded-md"
+                    >
+                        <option value="all">All Users</option>
+                        <option value="admin">Admins</option>
+                        <option value="seller">Sellers</option>
+                        <option value="buyer">Buyers</option>
+                    </select>
+                    <select
+                        value={filters.activityType}
+                        onChange={(e) => setFilters({ ...filters, activityType: e.target.value })}
+                        className="px-3 py-2 border rounded-md"
+                    >
+                        <option value="all">All Activities</option>
+                        <option value="order_created">Orders</option>
+                        <option value="payment_processed">Payments</option>
+                        <option value="return_requested">Returns</option>
+                    </select>
+                </div>
             </div>
-            <div className="mt-2 text-sm">
-              <span className="text-gray-500">User: </span>
-              <span className="text-gray-900">{log.user}</span>
-              <span className="mx-2">•</span>
-              <span className="text-gray-500">IP: </span>
-              <span className="text-gray-900">{log.ip}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      {hasMore && (
-        <button
-          onClick={() => setPage(p => p + 1)}
-          className="mt-4 w-full py-2 text-sm text-blue-600 hover:text-blue-700"
-        >
-          Load More
-        </button>
-      )}
-    </div>
-  );
-};
-
-SystemLogs.propTypes = {
-  dateRange: PropTypes.shape({
-    from: PropTypes.instanceOf(Date),
-    to: PropTypes.instanceOf(Date)
-  })
+            <Table columns={columns} data={logs} />
+        </div>
+    );
 };
 
 export default SystemLogs; 

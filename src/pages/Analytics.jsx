@@ -1,140 +1,160 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import { analyticsService } from '../services/analyticsService';
-import AnalyticsStats from '../components/analytics/AnalyticsStats';
-import SalesChart from '../components/analytics/SalesChart';
+import React, { useState, useEffect } from 'react';
+import { BarChart2, Download, Filter, Users, ShoppingBag, DollarSign } from 'lucide-react';
+import DateRangePicker from '../components/common/DateRangePicker';
+import StatsCard from '../components/dashboard/StatsCard';
+import RevenueChart from '../components/analytics/RevenueChart';
+import SystemLogs from '../components/analytics/SystemLogs';
 import TopProducts from '../components/analytics/TopProducts';
 import UserActivityChart from '../components/analytics/UserActivityChart';
-import SystemLogs from '../components/analytics/SystemLogs';
-import DateRangePicker from '../components/common/DateRangePicker';
-import { Download } from 'lucide-react';
+import { analyticsService } from '../services/analyticsService';
+import { toast } from 'react-hot-toast';
 
 const Analytics = () => {
-  const [dateRange, setDateRange] = useState({ 
-    from: new Date(new Date().setDate(new Date().getDate() - 30)), // Last 30 days
-    to: new Date() 
-  });
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
   const [groupBy, setGroupBy] = useState('day');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [topProducts, setTopProducts] = useState([]);
+  const [userActivity, setUserActivity] = useState([]);
 
-  // Validate dateRange whenever it changes
   useEffect(() => {
-    if (!dateRange?.from || !dateRange?.to) {
-      console.warn('Invalid date range');
-      setDateRange({
-        from: new Date(new Date().setDate(new Date().getDate() - 30)),
-        to: new Date()
-      });
+    fetchOverviewStats();
+  }, []);
+
+  useEffect(() => {
+    if (dateRange.from && dateRange.to) {
+      fetchTopProducts();
+      fetchUserActivity();
     }
   }, [dateRange]);
 
-  const handleDateRangeChange = (newRange) => {
-    if (!newRange?.from || !newRange?.to) {
-      toast.error('Please select valid dates');
-      return;
-    }
-    setDateRange(newRange);
-  };
-
-  const fetchAnalyticsData = async () => {
-    if (!dateRange.from || !dateRange.to) return;
-    
-    setLoading(true);
-    setError(null);
-    
+  const fetchOverviewStats = async () => {
     try {
-      await Promise.all([
-        analyticsService.getOverviewStats(),
-        analyticsService.getRevenueAnalytics(dateRange, groupBy),
-        analyticsService.getUserActivity(dateRange, groupBy),
-        analyticsService.getSystemLogs(dateRange),
-        analyticsService.getTopProducts(dateRange)
-      ]);
-      
-    } catch (err) {
-      setError(err.message);
-      toast.error('Failed to fetch analytics data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExport = async (format) => {
-    try {
-      setLoading(true);
-      await analyticsService.exportData(format, dateRange);
-      toast.success(`Successfully exported data as ${format.toUpperCase()}`);
+      const data = await analyticsService.getOverviewStats();
+      setStats(data);
     } catch (error) {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error('Failed to fetch overview stats');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, [dateRange, groupBy]);
+  const fetchTopProducts = async () => {
+    try {
+      const data = await analyticsService.getTopProducts({
+        from: dateRange.from,
+        to: dateRange.to,
+        limit: 5
+      });
+      setTopProducts(data);
+    } catch (error) {
+      toast.error('Failed to fetch top products');
+    }
+  };
+
+  const fetchUserActivity = async () => {
+    try {
+      const data = await analyticsService.getUserActivity({
+        from: dateRange.from,
+        to: dateRange.to
+      });
+      setUserActivity(data);
+    } catch (error) {
+      toast.error('Failed to fetch user activity');
+    }
+  };
+
+  const handleExport = async (type) => {
+    try {
+      if (!dateRange.from || !dateRange.to) {
+        toast.error('Please select a date range');
+        return;
+      }
+
+      await analyticsService.exportData(type, {
+        dateRange,
+        filters: { groupBy }
+      });
+      toast.success(`${type.toUpperCase()} report generated successfully`);
+    } catch (error) {
+      toast.error(`Failed to generate ${type} report`);
+    }
+  };
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
-        <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-        
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-          <DateRangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-            className="w-full sm:w-auto"
-          />
-          
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
+        <div className="flex space-x-4">
+          <DateRangePicker onChange={setDateRange} />
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="px-4 py-2 border rounded-md"
           >
             <option value="day">Daily</option>
             <option value="week">Weekly</option>
             <option value="month">Monthly</option>
           </select>
-
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleExport('csv')}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Download className="w-4 h-4 inline mr-2" />
-              Export CSV
-            </button>
-            <button
-              onClick={() => handleExport('pdf')}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Download className="w-4 h-4 inline mr-2" />
-              Export PDF
-            </button>
-          </div>
+          <button
+            onClick={() => handleExport('csv')}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => handleExport('pdf')}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export PDF
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <AnalyticsStats dateRange={dateRange} />
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 min-h-[500px]">
-          <SalesChart dateRange={dateRange} groupBy={groupBy} />
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-6 min-h-[500px]">
-          <UserActivityChart dateRange={dateRange} groupBy={groupBy} />
-        </div>
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Revenue"
+          value={`$${stats?.stats?.totalRevenue?.toFixed(2) || '0.00'}`}
+          icon={BarChart2}
+          trend={stats?.growth?.revenue}
+          trendLabel="vs last month"
+        />
+        <StatsCard
+          title="Active Users"
+          value={stats?.stats?.activeUsers || '0'}
+          icon={Users}
+          trend={stats?.growth?.users}
+          trendLabel="vs last month"
+        />
+        <StatsCard
+          title="Total Orders"
+          value={stats?.stats?.totalOrders || '0'}
+          icon={ShoppingBag}
+          trend={stats?.growth?.orders}
+          trendLabel="vs last month"
+        />
+        <StatsCard
+          title="Average Order Value"
+          value={`$${stats?.stats?.averageOrderValue?.toFixed(2) || '0.00'}`}
+          icon={DollarSign}
+          trend={stats?.growth?.averageOrder}
+          trendLabel="vs last month"
+        />
       </div>
 
-      {/* System Logs and Top Products */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RevenueChart dateRange={dateRange} groupBy={groupBy} />
+        <UserActivityChart data={userActivity} />
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopProducts products={topProducts} />
         <SystemLogs dateRange={dateRange} />
-        <TopProducts dateRange={dateRange} />
       </div>
     </div>
   );
