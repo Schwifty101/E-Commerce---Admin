@@ -1,55 +1,56 @@
 const { orderStatusSchema, returnActionSchema, dateRangeSchema, exportRequestSchema } = require('../utils/validation');
 
 const validateOrderStatus = (req, res, next) => {
-    const { error } = orderStatusSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-    next();
-  };
-  
-  const validateReturnAction = (req, res, next) => {
-    const { status, adminComments } = req.body;
-    
-    if (!status || !['approved', 'rejected', 'escalated'].includes(status)) {
-        return res.status(400).json({ message: 'Invalid status value' });
-    }
+  const { error } = orderStatusSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+  next();
+};
 
-    if (!adminComments || adminComments.trim().length === 0) {
-        return res.status(400).json({ message: 'Admin comments are required' });
-    }
+const validateReturnAction = (req, res, next) => {
+  const { status, adminComments } = req.body;
 
-    next();
-  };
+  if (!status || !['approved', 'rejected', 'escalated'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value' });
+  }
 
-  const validateDateRange = (req, res, next) => {
-    const { error } = dateRangeSchema.validate(req.query);
-    if (error) {
-        return res.status(400).json({ 
-            message: 'Invalid date range parameters',
-            details: error.details[0].message 
-        });
-    }
-    next();
-  };
+  if (!adminComments || adminComments.trim().length === 0) {
+    return res.status(400).json({ message: 'Admin comments are required' });
+  }
 
-  const validateExportRequest = (req, res, next) => {
-    const { error } = exportRequestSchema.validate({
-        type: req.params.type,
-        ...req.body
+  next();
+};
+
+const validateDateRange = (req, res, next) => {
+  console.log('validateDateRange middleware triggered');
+  const { error } = dateRangeSchema.validate(req.query);
+  if (error) {
+    return res.status(400).json({
+      message: 'Invalid date range parameters',
+      details: error.details[0].message
     });
-    if (error) {
-        return res.status(400).json({ 
-            message: 'Invalid export parameters',
-            details: error.details[0].message 
-        });
-    }
-    next();
-  };
+  }
+  next();
+};
 
-  module.exports = {
-    validateOrderStatus,
-    validateReturnAction,
-    validateDateRange,
-    validateExportRequest
-  };
+const validateExportRequest = (req, res, next) => {
+  const { error } = exportRequestSchema.validate({
+    type: req.params.type,
+    ...req.body
+  });
+  if (error) {
+    return res.status(400).json({
+      message: 'Invalid export parameters',
+      details: error.details[0].message
+    });
+  }
+  next();
+};
+
+module.exports = {
+  validateOrderStatus,
+  validateReturnAction,
+  validateDateRange,
+  validateExportRequest
+};

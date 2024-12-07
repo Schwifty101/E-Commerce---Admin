@@ -5,8 +5,12 @@ const { validateDateRange } = require('../Middleware/validation');
 
 const router = express.Router();
 
-// Dashboard Stats
-router.get('/stats/overview', isAuthenticated, isAdmin, analyticsController.getOverviewStats);
+// Overview Stats
+router.get('/overview', 
+    isAuthenticated, 
+    isAdmin, 
+    analyticsController.getOverviewStats
+);
 
 // Revenue Analysis
 router.get('/revenue',
@@ -17,23 +21,15 @@ router.get('/revenue',
 );
 
 // User Activity
-router.get('/users/activity',
+router.get('/user-activity',
     isAuthenticated,
     isAdmin,
     validateDateRange,
     analyticsController.getUserActivity
 );
 
-// System Logs
-router.get('/logs',
-    isAuthenticated,
-    isAdmin,
-    validateDateRange,
-    analyticsController.getSystemLogs
-);
-
 // Top Products
-router.get('/products/top',
+router.get('/top-products',
     isAuthenticated,
     isAdmin,
     validateDateRange,
@@ -41,7 +37,7 @@ router.get('/products/top',
 );
 
 // Export Data
-router.post('/export/:type',
+router.post('/export',
     isAuthenticated,
     isAdmin,
     validateDateRange,

@@ -10,6 +10,7 @@ const validateLogin = (req, res, next) => {
 };
 
 const isAuthenticated = (req, res, next) => {
+  console.log('isAuthenticated middleware triggered');
   if (req.isAuthenticated()) {
     return next();
   }
@@ -20,6 +21,7 @@ const isAuthenticated = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
+  console.log('isAdmin middleware triggered');
   if (!req.isAuthenticated()) {
     res.status(401).json({
       message: 'Authentication required',

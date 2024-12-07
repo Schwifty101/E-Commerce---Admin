@@ -1,186 +1,108 @@
+import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 const BASE_URL = `${API_BASE_URL}/api/analytics`;
 
-const validateDateRange = (dateRange) => {
-    if (!dateRange?.from || !dateRange?.to) {
-        throw new Error('Invalid date range provided');
-    }
-    
-    // Ensure dates are Date objects
-    const from = dateRange.from instanceof Date ? dateRange.from : new Date(dateRange.from);
-    const to = dateRange.to instanceof Date ? dateRange.to : new Date(dateRange.to);
-    
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-        throw new Error('Invalid date format');
-    }
-    
-    return { from, to };
-};
-
 export const analyticsService = {
-    // Get dashboard overview stats
+    // Overview Statistics
     getOverviewStats: async () => {
         try {
-            const response = await fetch(`${BASE_URL}/stats/overview`, {
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+            const response = await axios.get(`${BASE_URL}/overview`, {
+                withCredentials: true
             });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error fetching overview stats');
-            }
-            
-            const { data } = await response.json();
-            
-            // Return a default structure if data is missing
-            return {
-                revenue: {
-                    total: 0,
-                    growth: 0
-                },
-                users: {
-                    active: 0,
-                    growth: 0
-                },
-                orders: {
-                    total: 0,
-                    average: 0,
-                    growth: 0,
-                    valueGrowth: 0
-                },
-                ...data // Spread the actual data if it exists
-            };
+
+            return response.data.data;
         } catch (error) {
-            console.error('Analytics service error:', error);
-            throw new Error('Error fetching overview stats');
+            console.error('Error fetching overview stats:', error);
+            throw new Error(error.response?.data?.message || 'Failed to fetch overview statistics');
         }
     },
 
-    // Get revenue analytics
-    getRevenueAnalytics: async (dateRange, groupBy) => {
-        const params = new URLSearchParams({
-            from: dateRange.from.toISOString(),
-            to: dateRange.to.toISOString(),
-            groupBy
-        });
+    getRevenueAnalytics: async (period = '30days') => {
+        try {
+            const response = await axios.get(`${BASE_URL}/revenue`, {
+                params: { period },
+                withCredentials: true
+            });
 
-        const response = await fetch(`${BASE_URL}/revenue?${params}`, {
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch revenue analytics');
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching revenue analytics:', error);
+            throw new Error(error.response?.data?.message || 'Failed to fetch revenue analytics');
         }
-
-        const { data } = await response.json();
-        return data || [];
     },
 
-    // Get user activity data
-    getUserActivity: async (dateRange, groupBy) => {
-        const params = new URLSearchParams({
-            from: dateRange.from.toISOString(),
-            to: dateRange.to.toISOString(),
-            groupBy
-        });
+    getUserActivity: async (period = '24hours') => {
+        try {
+            const response = await axios.get(`${BASE_URL}/user-activity`, {
+                params: { period },
+                withCredentials: true
+            });
 
-        const response = await fetch(`${BASE_URL}/users/activity?${params}`, {
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch user activity');
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching user activity:', error);
+            throw new Error(error.response?.data?.message || 'Failed to fetch user activity');
         }
-
-        const { data } = await response.json();
-        return data?.activityData || [];
     },
 
-    // Get system logs
-    getSystemLogs: async (dateRange) => {
-        const validatedRange = validateDateRange(dateRange);
-        
-        const params = new URLSearchParams({
-            from: validatedRange.from.toISOString(),
-            to: validatedRange.to.toISOString()
-        });
+    getTopProducts: async ({
+        period = '30days',
+        limit = 10,
+        sortBy = 'revenue'
+    } = {}) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/top-products`, {
+                params: {
+                    period,
+                    limit,
+                    sortBy
+                },
+                withCredentials: true
+            });
 
-        const response = await fetch(`${BASE_URL}/logs?${params}`, {
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch system logs');
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching top products:', error);
+            throw new Error(error.response?.data?.message || 'Failed to fetch top products');
         }
-
-        return response.json();
     },
 
-    // Get top products
-    getTopProducts: async (dateRange) => {
-        const params = new URLSearchParams({
-            from: dateRange.from.toISOString(),
-            to: dateRange.to.toISOString()
-        });
+    exportData: async ({
+        type = 'all',
+        period = '30days',
+        format = 'csv'
+    } = {}) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/export`, {
+                params: {
+                    type,
+                    period,
+                    format
+                },
+                responseType: 'blob',
+                withCredentials: true
+            });
 
-        const response = await fetch(`${BASE_URL}/products/top?${params}`, {
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+            // Generate filename
+            const filename = `analytics_export_${period}_${type}_${new Date().toISOString().split('T')[0]}.${format}`;
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch top products');
+            // Create download link
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+
+            return true;
+        } catch (error) {
+            console.error('Error exporting analytics data:', error);
+            throw new Error(error.response?.data?.message || 'Failed to export analytics data');
         }
-
-        return response.json();
-    },
-
-    // Export data
-    exportData: async (format, dateRange, filters = {}) => {
-        const response = await fetch(`${BASE_URL}/export/${format}`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                dateRange,
-                filters
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to export data');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `analytics-export-${new Date().toISOString()}.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
     }
-}; 
+};
