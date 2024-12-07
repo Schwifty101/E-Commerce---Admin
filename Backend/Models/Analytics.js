@@ -39,6 +39,9 @@ const analyticsSchema = new mongoose.Schema({
             ref: 'Product',
             required: true
         },
+        name: String,
+        category: String,
+        image: String,
         sales: { type: Number, default: 0 },
         revenue: { type: Number, default: 0 }
     }],
@@ -60,7 +63,22 @@ const analyticsSchema = new mongoose.Schema({
         },
         timestamp: { type: Date, default: Date.now },
         ipAddress: String
-    }]
+    }],
+    dailyMetrics: {
+        revenue: [{
+            hour: Number,
+            amount: Number
+        }],
+        orders: [{
+            hour: Number,
+            count: Number
+        }]
+    },
+    conversionMetrics: {
+        visitToCart: { type: Number, default: 0 },
+        cartToOrder: { type: Number, default: 0 },
+        orderToDelivery: { type: Number, default: 0 }
+    }
 }, {
     timestamps: true
 });
@@ -145,6 +163,55 @@ analyticsSchema.statics.logUserActivity = async function(userId, action, ipAddre
     }
 
     await analytics.save();
+};
+
+// Add method to get analytics within date range
+analyticsSchema.statics.getDateRangeMetrics = async function(startDate, endDate) {
+    return this.aggregate([
+        {
+            $match: {
+                date: { $gte: startDate, $lte: endDate }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: '$metrics.revenue.total' },
+                totalOrders: { $sum: '$metrics.orders.total' },
+                activeUsers: { $avg: '$metrics.users.active' }
+            }
+        }
+    ]);
+};
+
+// Add method to get top products with full details
+analyticsSchema.statics.getTopProductsWithDetails = async function(startDate, endDate, limit = 10) {
+    return this.aggregate([
+        {
+            $match: {
+                date: { $gte: startDate, $lte: endDate }
+            }
+        },
+        {
+            $unwind: '$topProducts'
+        },
+        {
+            $group: {
+                _id: '$topProducts.productId',
+                name: { $first: '$topProducts.name' },
+                category: { $first: '$topProducts.category' },
+                image: { $first: '$topProducts.image' },
+                totalSales: { $sum: '$topProducts.sales' },
+                totalRevenue: { $sum: '$topProducts.revenue' }
+            }
+        },
+        {
+            $sort: { totalRevenue: -1 }
+        },
+        {
+            $limit: limit
+        }
+    ]);
 };
 
 // Index for efficient querying

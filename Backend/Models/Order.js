@@ -105,4 +105,34 @@ orderSchema.pre('save', async function(next) {
   next();
 });
 
+// Add indexes for analytics queries
+orderSchema.index({ createdAt: -1, status: 1 });
+orderSchema.index({ vendor: 1, createdAt: -1 });
+orderSchema.index({ customer: 1, createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
+
+// Add method to get order analytics
+orderSchema.statics.getAnalytics = async function(startDate, endDate) {
+    return this.aggregate([
+        {
+            $match: {
+                createdAt: { $gte: startDate, $lte: endDate }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+                },
+                orderCount: { $sum: 1 },
+                revenue: { $sum: "$total" },
+                averageOrderValue: { $avg: "$total" }
+            }
+        },
+        {
+            $sort: { _id: 1 }
+        }
+    ]);
+};
+
 module.exports = mongoose.model('Order', orderSchema); 

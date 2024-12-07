@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import ProductManagement from './pages/ProductManagement';
 import OrderManagement from './pages/OrderManagement';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import Analytics from './pages/analytics';
 
 const AppContent = () => {
   const { isAdminAuthenticated } = useAuth();
@@ -31,7 +31,7 @@ const AppContent = () => {
                     <Route path="/users" element={<UserManagement />} />
                     <Route path="/products" element={<ProductManagement />} />
                     <Route path="/orders" element={<OrderManagement />} />
-                    <Route path="/analytics" element={<AnalyticsDashboard />} />
+                    <Route path="/analytics/*" element={<Analytics />} />
                   </Routes>
                 </main>
               </div>

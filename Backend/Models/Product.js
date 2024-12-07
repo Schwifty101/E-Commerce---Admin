@@ -96,6 +96,79 @@ productSchema.pre('save', function(next) {
   next();
 });
 
+// Add analytics-related methods
+productSchema.statics.getTopSellingProducts = async function(startDate, endDate, limit = 10, sortBy = 'revenue') {
+    try {
+        const Order = mongoose.model('Order');
+        
+        const pipeline = [
+            {
+                $match: {
+                    createdAt: { 
+                        $gte: new Date(startDate), 
+                        $lte: new Date(endDate) 
+                    },
+                    status: { $in: ['delivered', 'shipped'] }
+                }
+            },
+            {
+                $unwind: '$items'
+            },
+            {
+                $group: {
+                    _id: '$items.productId',
+                    totalSales: { $sum: '$items.quantity' },
+                    totalRevenue: { $sum: '$items.subtotal' }
+                }
+            },
+            {
+                $sort: sortBy === 'sales' 
+                    ? { totalSales: -1 } 
+                    : { totalRevenue: -1 }
+            },
+            {
+                $limit: parseInt(limit) || 10
+            },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'productDetails'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$productDetails',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: { $ifNull: ['$productDetails.name', 'Unknown Product'] },
+                    category: { $ifNull: ['$productDetails.category', 'Uncategorized'] },
+                    image: { 
+                        $ifNull: [
+                            '$productDetails.image', 
+                            'https://via.placeholder.com/150'
+                        ] 
+                    },
+                    totalSales: 1,
+                    totalRevenue: 1
+                }
+            }
+        ];
+
+        const results = await Order.aggregate(pipeline);
+        return results || [];
+        
+    } catch (error) {
+        console.error('Error in getTopSellingProducts:', error);
+        return [];
+    }
+};
+
 // Export schemas for potential reuse
 module.exports = {
   Product: mongoose.models.Product || mongoose.model('Product', productSchema),

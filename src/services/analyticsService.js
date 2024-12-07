@@ -22,16 +22,11 @@ export const analyticsService = {
         try {
             const response = await axios.get(`${BASE_URL}/revenue`, {
                 params: {
-                    period: period || '30days',
-                    groupBy: 'day'
+                    period: period || '30days'
                 },
                 withCredentials: true
             });
 
-            // Debug log
-            console.log('Revenue API Response:', response.data);
-
-            // Safely access nested data with optional chaining
             const data = response.data?.data;
             
             if (!data) {
@@ -40,17 +35,20 @@ export const analyticsService = {
 
             return {
                 summary: {
-                    totalRevenue: data.metrics?.revenue?.total || 0,
-                    totalOrders: data.metrics?.orders?.total || 0,
-                    avgOrderValue: data.metrics?.orders?.total ? 
-                        (data.metrics.revenue.total / data.metrics.orders.total) : 0
+                    ...data.summary,
+                    conversionMetrics: data.summary.conversionMetrics || {
+                        visitToCart: 0,
+                        cartToOrder: 0,
+                        orderToDelivery: 0
+                    }
                 },
-                dailyData: [{
-                    date: data.date || new Date(),
-                    totalRevenue: data.metrics?.revenue?.total || 0,
-                    orderCount: data.metrics?.orders?.total || 0,
-                    growth: data.metrics?.revenue?.growth || 0
-                }]
+                dailyData: data.dailyData.map(day => ({
+                    date: new Date(day.date),
+                    totalRevenue: day.revenue,
+                    orderCount: day.orders.total,
+                    growth: day.growth,
+                    hourlyRevenue: day.hourlyRevenue
+                }))
             };
         } catch (error) {
             console.error('Error fetching revenue analytics:', error);
@@ -68,9 +66,6 @@ export const analyticsService = {
                 withCredentials: true
             });
 
-            // Debug log
-            console.log('User Activity API Response:', response.data);
-
             const data = response.data?.data;
             
             if (!data) {
@@ -79,15 +74,12 @@ export const analyticsService = {
 
             return {
                 summary: {
-                    totalActive: data.metrics?.users?.active || 0,
-                    newUsers: data.metrics?.users?.new || 0,
-                    buyers: data.metrics?.users?.buyers || 0,
-                    sellers: data.metrics?.users?.sellers || 0
+                    totalActive: data.summary.totalActive || 0,
+                    newUsers: data.summary.newUsers || 0,
+                    buyers: data.summary.buyers || 0,
+                    sellers: data.summary.sellers || 0
                 },
-                hourlyActivity: (data.userActivity || []).map(item => ({
-                    hour: item.hour || 0,
-                    activeUsers: item.activeUsers || 0
-                }))
+                hourlyActivity: data.hourlyActivity || []
             };
         } catch (error) {
             console.error('Error fetching user activity:', error);
@@ -99,16 +91,9 @@ export const analyticsService = {
     getTopProducts: async ({ period, limit = 10, sortBy = 'revenue' }) => {
         try {
             const response = await axios.get(`${BASE_URL}/top-products`, {
-                params: {
-                    period: period || '30days',
-                    limit,
-                    sortBy
-                },
+                params: { period, limit, sortBy },
                 withCredentials: true
             });
-
-            // Debug log
-            console.log('Top Products API Response:', response.data);
 
             const data = response.data?.data;
             
@@ -117,14 +102,14 @@ export const analyticsService = {
             }
 
             return {
-                products: (data.topProducts || []).map(product => ({
-                    productId: product.productId || 'unknown',
-                    name: product.name || 'Product Name',
-                    category: product.category || 'Category',
-                    image: product.image || 'https://via.placeholder.com/150',
+                products: data.topProducts.map(product => ({
+                    productId: product._id,
+                    name: product.name,
+                    category: product.category,
+                    image: product.image,
                     stats: {
-                        totalSales: product.sales || 0,
-                        totalRevenue: product.revenue || 0
+                        totalSales: product.totalSales,
+                        totalRevenue: product.totalRevenue
                     }
                 }))
             };
