@@ -67,19 +67,29 @@ export const orderService = {
     },
 
     processReturnRequest: async (orderId, actionData) => {
-        const response = await fetch(`${BASE_URL}/${orderId}/returns`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(actionData)
-        });
-        if (!response.ok) {
-            const error = await response.json();
+        try {
+            const response = await fetch(`${BASE_URL}/${orderId}/returns`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: actionData.action,
+                    comments: actionData.comments
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to process return request');
+            }
+            
+            return data;
+        } catch (error) {
             throw new Error(error.message || 'Failed to process return request');
         }
-        return response.json();
     },
 
     exportOrders: async (filters = {}) => {

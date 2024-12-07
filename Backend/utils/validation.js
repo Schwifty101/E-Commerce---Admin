@@ -105,13 +105,39 @@ const orderStatusSchema = Joi.object({
 const returnActionSchema = Joi.object({
   action: Joi.string()
     .valid('approve', 'reject', 'escalate')
-    .required(),
-  comments: Joi.string().required(),
-  refundAmount: Joi.when('action', {
-    is: 'approve',
-    then: Joi.number().required(),
-    otherwise: Joi.number().optional()
-  })
+    .required()
+    .messages({
+      'any.required': 'Action is required',
+      'string.valid': 'Action must be approve, reject, or escalate'
+    }),
+  comments: Joi.string()
+    .required()
+    .min(1)
+    .messages({
+      'any.required': 'Comments are required',
+      'string.empty': 'Comments cannot be empty'
+    })
+});
+
+const dateRangeSchema = Joi.object({
+    from: Joi.date().required(),
+    to: Joi.date().min(Joi.ref('from')).required(),
+    groupBy: Joi.string().valid('day', 'week', 'month').default('day')
+}).messages({
+    'date.min': 'End date must be after start date',
+    'any.required': 'Both start and end dates are required'
+});
+
+const exportRequestSchema = Joi.object({
+    type: Joi.string().valid('csv', 'pdf').required(),
+    dateRange: dateRangeSchema,
+    filters: Joi.object({
+        userType: Joi.string().valid('all', 'admin', 'vendor', 'customer'),
+        activityType: Joi.string().valid('all', 'login', 'order', 'product'),
+        status: Joi.string()
+    }).optional()
+}).messages({
+    'string.valid': 'Invalid export type specified'
 });
 
 module.exports = {
@@ -121,5 +147,7 @@ module.exports = {
   rejectSchema,
   updateProductSchema,
   orderStatusSchema,
-  returnActionSchema
+  returnActionSchema,
+  dateRangeSchema,
+  exportRequestSchema
 };

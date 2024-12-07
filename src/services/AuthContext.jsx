@@ -1,12 +1,23 @@
-import React from 'react';
+import React, { createContext, useState, useContext, useEffect }from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config';
 
-export const AuthContext = React.createContext(null);
+// Create context with a default value
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = React.useState(false);
+// Custom hook for using auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// Auth Provider Component
+export function AuthProvider({ children }) {
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const navigate = useNavigate();
 
   const checkAdminAuth = async () => {
@@ -18,29 +29,40 @@ export const AuthProvider = ({ children }) => {
       if (response.status === 403) {
         toast.error('Access denied. Admin privileges required.');
         navigate('/login');
+        return false;
       }
       
-      setIsAdminAuthenticated(response.status === 200);
+      const isAuthenticated = response.status === 200;
+      setIsAdminAuthenticated(isAuthenticated);
+      return isAuthenticated;
     } catch (error) {
+      console.error('Auth check failed:', error);
       setIsAdminAuthenticated(false);
       toast.error('Authentication check failed');
+      return false;
     }
   };
 
   const login = async (username, password) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-      credentials: 'include',
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Login failed');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Login failed');
+      }
+
+      setIsAdminAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
     }
-
-    setIsAdminAuthenticated(true);
   };
 
   const logout = async () => {
@@ -53,30 +75,28 @@ export const AuthProvider = ({ children }) => {
       navigate('/login');
       toast.success('Logged out successfully');
     } catch (error) {
+      console.error('Logout failed:', error);
       toast.error('Logout failed');
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkAdminAuth();
   }, []);
 
+  const value = {
+    isAdminAuthenticated,
+    login,
+    logout,
+    checkAdminAuth
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      isAdminAuthenticated, 
-      login, 
-      logout, 
-      checkAdminAuth 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}; 
+// Named export for the context itself if needed elsewhere
+export { AuthContext };
