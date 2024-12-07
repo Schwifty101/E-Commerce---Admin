@@ -11,7 +11,8 @@
     "seed-users": "node seeds/userSeeder.js",
     "seed-products": "node seeds/productSeeder.js",
     "seed-orders": "node seeds/orderSeeder.js",
-    "seed-all": "npm run seed-users && npm run seed-products && npm run seed-orders"
+    "seed-analytics": "node seeds/analyticsSeeder.js",
+    "seed-all": "npm run seed-users && npm run seed-products && npm run seed-orders && npm run seed-analytics"
   },
   "keywords": [],
   "author": "",

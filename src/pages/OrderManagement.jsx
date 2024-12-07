@@ -82,11 +82,16 @@ const OrderManagement = () => {
   // Handle return request processing
   const handleReturnRequest = async (requestId, actionData) => {
     try {
-      await orderService.processReturnRequest(requestId, actionData);
-      toast.success('Return request processed successfully');
-      fetchReturnRequests();
+      const result = await orderService.processReturnRequest(requestId, actionData);
+      if (result.success) {
+        toast.success('Return request processed successfully');
+        fetchReturnRequests(); // Refresh the list
+      } else {
+        toast.error(result.message || 'Failed to process return request');
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to process return request');
+      console.error('Return request error:', error);
     }
   };
 

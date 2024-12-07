@@ -8,9 +8,13 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const validRequests = requests.filter(request => 
+        request.returnRequest && Object.keys(request.returnRequest).length > 0
+    );
+
     const handleReviewClick = (request) => {
-        if (!request) {
-            toast.error('No request data available');
+        if (!request?.returnRequest) {
+            toast.error('No return request data available');
             return;
         }
         setSelectedRequest(request);
@@ -19,15 +23,21 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
 
     const handleAction = async (request, action, comment) => {
         try {
+            // Check if request is already processed
+            if (request.returnRequest.status === 'approved' || request.returnRequest.status === 'rejected') {
+                toast.error(`Cannot modify a request that is already ${request.returnRequest.status}`);
+                return;
+            }
+
             await onUpdateRequest(request._id, {
-                status: action,
-                adminComments: comment
+                action,
+                comments: comment
             });
             setIsModalOpen(false);
             setSelectedRequest(null);
-            toast.success(`Return request ${action} successfully`);
+            toast.success(`Return request ${action}ed successfully`);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || 'Failed to process return request');
         }
     };
 
@@ -55,11 +65,12 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
                 accessor: row => row.returnRequest?.status,
                 id: 'returnStatus',
                 Cell: ({ value }) => (
-                    <span className={`px-2 py-1 rounded-full text-xs ${value === 'approved' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                        value === 'approved' ? 'bg-green-100 text-green-800' :
                         value === 'rejected' ? 'bg-red-100 text-red-800' :
-                            value === 'escalated' ? 'bg-orange-100 text-orange-800' :
-                                'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        value === 'escalated' ? 'bg-orange-100 text-orange-800' :
+                        'bg-yellow-100 text-yellow-800'
+                    }`}>
                         {value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Pending'}
                     </span>
                 )
@@ -75,10 +86,7 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
                 id: 'actions',
                 Cell: ({ row }) => (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleReviewClick(row.original);
-                        }}
+                        onClick={() => handleReviewClick(row.original)}
                         type="button"
                         className="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded"
                     >
@@ -92,7 +100,7 @@ const ReturnRefundManagement = ({ requests, onUpdateRequest }) => {
 
     return (
         <div>
-            <Table columns={columns} data={requests} />
+            <Table columns={columns} data={validRequests} />
             <ReturnRefundModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

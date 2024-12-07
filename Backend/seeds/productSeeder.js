@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Product = require('../models/Product');
+const {Product} = require('../Models/Product');
 const User = require('../models/User');
 const dotenv = require('dotenv');
 const seedUsers = require('./userSeeder');

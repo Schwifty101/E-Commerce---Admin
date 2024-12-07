@@ -5,13 +5,17 @@ const passport = require('passport');
 const mongoSanitize = require('express-mongo-sanitize');
 const cors = require('cors');
 const MongoStore = require('connect-mongo');
-const Admin = require('./Models/Admin');
 const dotenv = require('dotenv');
+const { initializeFileSystem } = require('./utils/fileSystem');
+const { setupCleanup } = require('./utils/cleanup');
+const errorHandler = require('./Middleware/errorHandler');
+const Admin = require('./Models/Admin');
 const authRoutes = require('./Routes/auth');
 const dashboardRoutes = require('./Routes/dashboard');
 const userRoutes = require('./Routes/users');
 const productRoutes = require('./Routes/products');
 const orderRoutes = require('./Routes/orders');
+const analyticsRoutes = require('./Routes/analytics');
 
 dotenv.config();
 
@@ -21,6 +25,12 @@ if (!process.env.MONGODB_URI) {
 }
 
 const app = express();
+
+// Initialize file system (create temp directory)
+initializeFileSystem();
+
+// Setup cleanup handlers
+setupCleanup();
 
 // Middleware
 app.use(express.json());
@@ -75,7 +85,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
+
+app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
