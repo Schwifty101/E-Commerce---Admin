@@ -1,7 +1,7 @@
 const express = require('express');
 const { isAuthenticated, isAdmin } = require('../Middleware/auth');
 const analyticsController = require('../Controllers/analyticsController');
-const { validateDateRange } = require('../Middleware/validation');
+const { validatePeriod } = require('../Middleware/validation');
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.get('/overview',
 router.get('/revenue',
     isAuthenticated,
     isAdmin,
-    validateDateRange,
+    validatePeriod,
     analyticsController.getRevenueAnalytics
 );
 
@@ -24,7 +24,7 @@ router.get('/revenue',
 router.get('/user-activity',
     isAuthenticated,
     isAdmin,
-    validateDateRange,
+    validatePeriod,
     analyticsController.getUserActivity
 );
 
@@ -32,7 +32,7 @@ router.get('/user-activity',
 router.get('/top-products',
     isAuthenticated,
     isAdmin,
-    validateDateRange,
+    validatePeriod,
     analyticsController.getTopProducts
 );
 
@@ -40,7 +40,7 @@ router.get('/top-products',
 router.post('/export',
     isAuthenticated,
     isAdmin,
-    validateDateRange,
+    validatePeriod,
     analyticsController.exportData
 );
 

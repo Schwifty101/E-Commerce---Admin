@@ -18,52 +18,119 @@ export const analyticsService = {
         }
     },
 
-    getRevenueAnalytics: async (period = '30days') => {
+    getRevenueAnalytics: async ({ period }) => {
         try {
             const response = await axios.get(`${BASE_URL}/revenue`, {
-                params: { period },
+                params: {
+                    period: period || '30days',
+                    groupBy: 'day'
+                },
                 withCredentials: true
             });
 
-            return response.data.data;
+            // Debug log
+            console.log('Revenue API Response:', response.data);
+
+            // Safely access nested data with optional chaining
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                summary: {
+                    totalRevenue: data.metrics?.revenue?.total || 0,
+                    totalOrders: data.metrics?.orders?.total || 0,
+                    avgOrderValue: data.metrics?.orders?.total ? 
+                        (data.metrics.revenue.total / data.metrics.orders.total) : 0
+                },
+                dailyData: [{
+                    date: data.date || new Date(),
+                    totalRevenue: data.metrics?.revenue?.total || 0,
+                    orderCount: data.metrics?.orders?.total || 0,
+                    growth: data.metrics?.revenue?.growth || 0
+                }]
+            };
         } catch (error) {
             console.error('Error fetching revenue analytics:', error);
+            console.error('Response data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Failed to fetch revenue analytics');
         }
     },
 
-    getUserActivity: async (period = '24hours') => {
+    getUserActivity: async ({ period }) => {
         try {
             const response = await axios.get(`${BASE_URL}/user-activity`, {
-                params: { period },
+                params: {
+                    period: period || '30days'
+                },
                 withCredentials: true
             });
 
-            return response.data.data;
+            // Debug log
+            console.log('User Activity API Response:', response.data);
+
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                summary: {
+                    totalActive: data.metrics?.users?.active || 0,
+                    newUsers: data.metrics?.users?.new || 0,
+                    buyers: data.metrics?.users?.buyers || 0,
+                    sellers: data.metrics?.users?.sellers || 0
+                },
+                hourlyActivity: (data.userActivity || []).map(item => ({
+                    hour: item.hour || 0,
+                    activeUsers: item.activeUsers || 0
+                }))
+            };
         } catch (error) {
             console.error('Error fetching user activity:', error);
+            console.error('Response data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Failed to fetch user activity');
         }
     },
 
-    getTopProducts: async ({
-        period = '30days',
-        limit = 10,
-        sortBy = 'revenue'
-    } = {}) => {
+    getTopProducts: async ({ period, limit = 10, sortBy = 'revenue' }) => {
         try {
             const response = await axios.get(`${BASE_URL}/top-products`, {
                 params: {
-                    period,
+                    period: period || '30days',
                     limit,
                     sortBy
                 },
                 withCredentials: true
             });
 
-            return response.data.data;
+            // Debug log
+            console.log('Top Products API Response:', response.data);
+
+            const data = response.data?.data;
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            return {
+                products: (data.topProducts || []).map(product => ({
+                    productId: product.productId || 'unknown',
+                    name: product.name || 'Product Name',
+                    category: product.category || 'Category',
+                    image: product.image || 'https://via.placeholder.com/150',
+                    stats: {
+                        totalSales: product.sales || 0,
+                        totalRevenue: product.revenue || 0
+                    }
+                }))
+            };
         } catch (error) {
             console.error('Error fetching top products:', error);
+            console.error('Response data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Failed to fetch top products');
         }
     },

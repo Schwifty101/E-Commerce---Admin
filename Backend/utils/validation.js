@@ -120,24 +120,47 @@ const returnActionSchema = Joi.object({
 });
 
 const dateRangeSchema = Joi.object({
-    from: Joi.date().required(),
-    to: Joi.date().min(Joi.ref('from')).required(),
-    groupBy: Joi.string().valid('day', 'week', 'month').default('day')
+  from: Joi.date().required(),
+  to: Joi.date().min(Joi.ref('from')).required(),
+  groupBy: Joi.string().valid('day', 'week', 'month').default('day')
 }).messages({
-    'date.min': 'End date must be after start date',
-    'any.required': 'Both start and end dates are required'
+  'date.min': 'End date must be after start date',
+  'any.required': 'Both start and end dates are required'
+});
+
+const periodSchema = Joi.object({
+  period: Joi.string()
+    .valid('24hours', '7days', '30days', '90days', '12months')
+    .required()
+    .messages({
+      'any.required': 'Period is required',
+      'string.valid': 'Invalid period value'
+    }),
+  groupBy: Joi.string()
+    .valid('hour', 'day', 'week', 'month')
+    .default('day'),
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(100)
+    .optional(),
+  sortBy: Joi.string()
+    .valid('revenue', 'sales')
+    .optional()
+}).messages({
+  'object.unknown': 'Invalid query parameters'
 });
 
 const exportRequestSchema = Joi.object({
-    type: Joi.string().valid('csv', 'pdf').required(),
-    dateRange: dateRangeSchema,
-    filters: Joi.object({
-        userType: Joi.string().valid('all', 'admin', 'vendor', 'customer'),
-        activityType: Joi.string().valid('all', 'login', 'order', 'product'),
-        status: Joi.string()
-    }).optional()
+  type: Joi.string().valid('csv', 'pdf').required(),
+  dateRange: dateRangeSchema,
+  filters: Joi.object({
+    userType: Joi.string().valid('all', 'admin', 'vendor', 'customer'),
+    activityType: Joi.string().valid('all', 'login', 'order', 'product'),
+    status: Joi.string()
+  }).optional()
 }).messages({
-    'string.valid': 'Invalid export type specified'
+  'string.valid': 'Invalid export type specified'
 });
 
 module.exports = {
@@ -149,5 +172,6 @@ module.exports = {
   orderStatusSchema,
   returnActionSchema,
   dateRangeSchema,
+  periodSchema,
   exportRequestSchema
 };
