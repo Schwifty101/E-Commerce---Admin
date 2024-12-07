@@ -1,0 +1,226 @@
+
+body {
+  background-image: linear-gradient(90deg,rgb(255, 255, 255), rgb(255, 177, 190));
+  background-size: cover; /* Ensures the image covers the entire viewport */
+  background-position: center; /* Centers the image */
+  background-repeat: no-repeat; /* Prevents tiling */
+  height: 100vh; /* Ensures the body always matches the viewport height */
+  margin: 0; /* Removes default margin for proper alignment */
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+ 
+}
+
+#root{
+  color:black;
+  font-family: Verdana  , sans-serif;
+  margin-top: 10px;
+  padding: 100px;
+  text-align: center;
+  font-size: 0.8em;
+ 
+  animation: fadeIn 1s ease-in ;
+}
+#logo{
+  width: 200px;
+  margin-top: -40px;
+}
+#logo1{
+  width: 200px;
+  margin-top: -40px;
+}
+.imageSlider1 {
+  position: absolute;
+  width: 800px;
+  margin-left: 170px;
+  margin-top: -300px;
+  opacity: 0; /* Start with the image invisible */
+}
+
+.imageSlider2 {
+  position: absolute;
+  width: 800px;
+  margin-left: -770px;
+  margin-top: -300px;
+  opacity: 0; /* Start with the image invisible */
+}
+.loginCard {
+  background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+  padding: 40px;
+  font-family: Arial, Helvetica, sans-serif;
+  backdrop-filter: blur(10px); /* Apply blur effect */
+  -webkit-backdrop-filter: blur(10px); /* Safari support */
+  box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+  text-align: left;
+  width: 300px;
+  /* Optional: Add a subtle shadow for better visibility */
+}
+.loginDisplay{
+display: flex;
+flex-direction: row;
+}
+#walpaper{
+width: 350px;
+box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+}
+#logo{
+width: 150px;
+margin-left: -40px;
+margin-top: -20px;
+}
+button{
+  border-radius: 10px;
+}
+input{
+  padding: 20px;
+  border-radius: 10px;
+  border: none;
+  background-color: rgb(223, 223, 223);
+  width: 80%;
+}
+.feedback{
+  font-size: 0.7em;
+  width: 10px;
+  display: inline;
+  flex-grow: 3;
+  margin-top: -10px;
+}
+
+.signCard{ background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+    padding: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    backdrop-filter: blur(10px); /* Apply blur effect */
+    -webkit-backdrop-filter: blur(10px); /* Safari support */
+    box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+    text-align: left;
+    width: 300px;
+}
+/* Keyframes for fading in from the right */
+@keyframes fadeIn{
+  from {
+    opacity: 0;
+   
+  }
+  to {
+    opacity: 1;
+   
+  }
+
+}
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Keyframes for fading in from the left */
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Keyframes for fading out to the right */
+@keyframes fadeOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Keyframes for fading out to the left */
+@keyframes fadeOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+/* Fade-in-right and fade-out-right for slider 1 */
+.fade-in-right {
+  animation: fadeInRight 3s ease-out forwards;
+}
+
+.fade-out-right {
+  animation: fadeOutRight 3s ease-in forwards;
+}
+
+/* Fade-in-left and fade-out-left for slider 2 */
+.fade-in-left {
+  animation: fadeInLeft 3s ease-out forwards;
+}
+
+.fade-out-left {
+  animation: fadeOutLeft 3s ease-in forwards;
+}
+
+@media (max-width: 1024px) {
+  .imageSlider1 {
+    width: 650px; /* Adjust width for tablets or medium-sized screens */
+    margin-left: 150px;
+    margin-top: -200px; /* Reduce left margin for better alignment */
+  }
+  .imageSlider2 {
+    width: 650px; /* Adjust width for tablets or medium-sized screens */
+    margin-left: -600px;
+    margin-top: -200px; /* Reduce left margin for better alignment */
+  }
+}
+
+@media (max-width: 768px) {
+  .imageSlider1 {
+    width: 450px; /* Adjust width for smaller tablets or large phones */
+    margin-left: 120px;
+    margin-top: -150px; /* Further reduce left margin */
+  }
+  .imageSlider2 {
+    width: 450px; /* Adjust width for smaller tablets or large phones */
+    margin-left: -370px;
+    margin-top: -150px; /* Further reduce left margin */
+  }
+}
+
+@media (max-width: 480px) {
+  .imageSlider1 {
+    display: none;/* Center the slider for very small screens */
+  }
+  .imageSlider2 {
+   display: none; /* Center the slider for very small screens */
+  }
+  body{
+    overflow: hidden;
+  }
+}
+h1{
+  margin-top: -30px;
+  opacity: 0.5;
+}
+button{
+  padding: 10px 20px;
+  color: white;
+  background-color: black;
+  border-radius: 10px;
+}
+button:hover{
+  background-color: #333;
+}

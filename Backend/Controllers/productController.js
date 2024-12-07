@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const {Product} = require('../models/Product');
 const { productActionSchema } = require('../utils/validation');
 const { sendNotification } = require('../utils/notification');
@@ -259,21 +260,26 @@ const updateProduct = async (req, res) => {
         });
     }
 };
-const getProductById = (async (req, res) => {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400);
-        throw new Error('Invalid product ID');
+const getProductById = async (req, res, next) => {
+    try {
+        console.log("Hello");
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid product ID' });
+        }
+        
+        const product = await Product.findById(req.params.id)
+            .populate('seller', 'name');
+        
+        if (product) {
+            res.json(product);
+        } else {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching product:', error);
+        res.status(500).json({ message: 'Error fetching product', error: error.message });
     }
-    const product = await Product.findById(req.params.id)
-        .populate('seller', 'name email');
-    
-    if (product) {
-        res.json(product);
-    } else {
-        res.status(404);
-        throw new Error('Product not found');
-    }
-});
+};
 
 // @desc    Create a product
 // @route   POST /api/products

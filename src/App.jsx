@@ -9,17 +9,19 @@ import UserManagement from './pages/UserManagement';
 import ProductManagement from './pages/ProductManagement';
 import OrderManagement from './pages/OrderManagement';
 import Analytics from './pages/Analytics';
-
+import './styling/index.css';
+import StartingPage from './pages/startingPage'
 const AppContent = () => {
   const { isAdminAuthenticated } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<StartingPage />} />
+      <Route path="/admin/login" element={<Login />} />
 
       {isAdminAuthenticated ? (
         <Route
-          path="/*"
+          path="/admin/*"
           element={
             <div className="flex min-h-screen bg-gray-50">
               <Sidebar />
@@ -32,6 +34,7 @@ const AppContent = () => {
                     <Route path="/products" element={<ProductManagement />} />
                     <Route path="/orders" element={<OrderManagement />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>
               </div>
@@ -39,7 +42,7 @@ const AppContent = () => {
           }
         />
       ) : (
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/admin/*" element={<Navigate to="/admin/login" />} />
       )}
     </Routes>
   );

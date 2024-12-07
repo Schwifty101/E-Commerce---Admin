@@ -1,0 +1,57 @@
+.footer {
+  
+  color: white;
+
+  padding: 3rem 0;
+  background-image: linear-gradient(90deg,rgb(83, 77, 137), rgb(62, 38, 42));
+  margin-top: 0px;
+}
+
+.footer-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .footer-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.footer-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.footer-text {
+  color: #dbdee1;
+}
+
+.footer-links {
+  list-style: none;
+}
+
+.footer-link {
+  color: #a6a8ac;
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.footer-link:hover {
+  color: white;
+}
+
+.footer-divider {
+  border-top: 1px solid #374151;
+  margin-top: 2rem;
+  padding-top: 2rem;
+}
+
+.footer-copyright {
+  text-align: center;
+  color: #9ca3af;
+}

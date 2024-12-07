@@ -1,0 +1,154 @@
+body {
+    background-image: linear-gradient(90deg,rgb(255, 255, 255), rgb(255, 177, 190));
+    background-size: cover; /* Ensures the image covers the entire viewport */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Prevents tiling */
+    height: 100vh; /* Ensures the body always matches the viewport height */
+    margin: 0; /* Removes default margin for proper alignment */
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .loginCard {
+    background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+    padding: 40px;
+    font-family: Arial, Helvetica, sans-serif;
+    backdrop-filter: blur(10px); /* Apply blur effect */
+    -webkit-backdrop-filter: blur(10px); /* Safari support */
+    box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+    text-align: left;
+    width: 350px;
+    /* Optional: Add a subtle shadow for better visibility */
+}
+.loginDisplay{
+  display: flex;
+  flex-direction: row;
+}
+#walpaper{
+  width: 350px;
+  box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+}
+#logo{
+  width: 150px;
+  margin-left: -40px;
+  margin-top: -20px;
+}
+  button{
+    border-radius: 10px;
+  }
+  input{
+    padding: 20px;
+    border-radius: 10px;
+    border: none;
+    background-color: rgb(223, 223, 223);
+    width: 98%;
+  }
+  .feedback{
+    font-size: 0.9em;
+    width: 100px;
+    display: inline;
+    flex-grow: 3;
+    margin-top: 0px;
+    
+  
+  }
+  
+  .signCard{ background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      backdrop-filter: blur(10px); /* Apply blur effect */
+      -webkit-backdrop-filter: blur(10px); /* Safari support */
+      box-shadow: 5px 10px 6px rgba(0, 0, 0, 0.3);
+      text-align: left;
+      width: 350px;
+  }
+  @media (max-width: 1024px) {
+
+    #walpaper{
+      display: none;
+    }
+    
+  }
+  @media (max-width: 550px){
+    .loginCard {
+        padding: 20px;
+        width: 100%; /* Completely fills the screen */
+        margin: 0; /* No space on the sides */
+    }
+
+    .signCard {
+        padding: 20px;
+        width: 100%; /* Matches login card responsiveness */
+        margin: 0;
+    }
+  }
+  
+
+
+  @keyframes fadeInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* Keyframes for fading in from the left */
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* Keyframes for fading out to the right */
+  @keyframes fadeOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+  
+  /* Keyframes for fading out to the left */
+  @keyframes fadeOutLeft {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+  
+  /* Fade-in-right and fade-out-right for slider 1 */
+  .fade-in-right {
+    animation: fadeInRight 1s ease-out forwards;
+  }
+  
+  .fade-out-right {
+    animation: fadeOutRight 1s ease-in forwards;
+  }
+  
+  /* Fade-in-left and fade-out-left for slider 2 */
+  .fade-in-left {
+    animation: fadeInLeft 1s ease-out forwards;
+  }
+  
+  .fade-out-left {
+    animation: fadeOutLeft 1s ease-in forwards;
+  }

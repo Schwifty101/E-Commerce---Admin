@@ -62,7 +62,18 @@ const productSchema = new mongoose.Schema({
     type: String, 
     required: true 
   }],
-
+  ratings: {
+    type: Number,
+    default: 0
+  },
+  reviews: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Review'
+  }],
+  features: [{
+    type: String,
+    default: []
+  }],
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated'],
@@ -88,6 +99,20 @@ const productSchema = new mongoose.Schema({
   updatedAt: { 
     type: Date, 
     default: Date.now 
+  }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Add virtual field for seller name
+productSchema.virtual('sellerName', {
+  ref: 'User',
+  localField: 'seller',
+  foreignField: '_id',
+  justOne: true,
+  get: function(seller) {
+    return seller ? seller.name : null;
   }
 });
 

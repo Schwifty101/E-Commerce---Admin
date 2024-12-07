@@ -15,7 +15,8 @@ const protect = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
+      console.log(decoded);
       // Store decoded token data in request object instead of user model
       req.user = decoded;
       next();

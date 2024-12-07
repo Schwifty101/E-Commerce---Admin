@@ -1,0 +1,151 @@
+.cart-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+  animation: fadeInRight ease-in 0.5s;
+
+}
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+    
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0%);
+
+  }
+}
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.cart-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  background-color: #cecece;
+}
+.cart-item:hover{
+  transition: transform ease-in 0.2s;
+  transform: scale(1.02);
+}
+.item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.item-details {
+  flex: 1;
+}
+.item-details p{
+  font-size: 0.8em;
+  color: #787878;
+  
+}
+
+.quantity-input {
+  width: 60px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  border: none;
+  background-color: #9b9b9b;
+}
+
+.checkout-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.checkout-button:hover {
+  background-color: #45a049;
+}
+
+.checkout-form {
+  width: 450px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #3b4769;
+  margin-top: 50px;
+  border-radius: 30px;
+  color: rgb(215, 213, 213);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  background-color: #bdcede;
+  border-radius: 10px;
+}
+
+.total-price {
+  margin: 2rem 0;
+  text-align: right;
+}
+
+.confirm-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #bf933b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.order-confirmation {
+  text-align: center;
+  padding: 2rem;
+}
+
+.price {
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0.5rem 0;
+}
+
+.back-button {
+  padding: 10px 20px;
+  margin-right: 10px;
+  background-color: #666;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #555;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}

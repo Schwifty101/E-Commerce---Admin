@@ -13,15 +13,12 @@ import {
 
 const Sidebar = () => {
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Users, label: 'User Management', path: '/users' },
-    { icon: Package, label: 'Products', path: '/products' },
-    { icon: ShoppingBag, label: 'Orders', path: '/orders' },
-    { icon: BarChart2, label: 'Analytics', path: '/analytics' },
-    { icon: Bell, label: 'Notifications', path: '/notifications' },
-    { icon: Shield, label: 'Security', path: '/security' },
-    { icon: FileText, label: 'Audit Logs', path: '/audit-logs' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+    { icon: Users, label: 'User Management', path: '/admin/users' },
+    { icon: Package, label: 'Products', path: '/admin/products' },
+    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+    { icon: BarChart2, label: 'Analytics', path: '/admin/analytics' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
   return (

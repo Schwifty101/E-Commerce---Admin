@@ -2,6 +2,7 @@ const express = require('express');
 const { isAuthenticated, isAdmin } = require('../Middleware/auth');
 const userController = require('../Controllers/userController');
 const { protect } = require('../Middleware/protect');
+const { submitReview, getProductReviews, deleteReview } = require('../Controllers/reviewController');
 
 const router = express.Router();
 
@@ -27,6 +28,9 @@ router.get('/profile',protect , userController.getUserProfile);
 router.put('/profile' ,protect ,userController.updateUserProfile);
 router.get('/orders' ,protect ,userController.getUserOrders);
 router.use('/products', require('./products.js'));
+router.post('/reviews/:productId', protect, submitReview);
+router.get('/reviews/:productId', protect, getProductReviews);
+router.delete('/reviews/:reviewId', protect, deleteReview);
 
 router.post('/signup', userController.signup);
 router.post('/login', userController.login);
