@@ -58,10 +58,11 @@ const productSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
-  image: { 
+  images: [{ 
     type: String, 
     required: true 
-  },
+  }],
+
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'flagged', 'deleted', 'escalated'],

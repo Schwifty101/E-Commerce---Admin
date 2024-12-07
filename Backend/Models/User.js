@@ -38,6 +38,28 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  phone: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  cart: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    },
+  }],
   businessDetails: {
     companyName: String,
     registrationNumber: String,
