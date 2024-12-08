@@ -1,19 +1,47 @@
 import React, { useState } from 'react';
 
 function CheckoutForm({ items, onConfirm, onBack }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    address: '',
-    city: '',
-    zipCode: '',
+    shippingAddress: '',
+    paymentMethod: 'credit_card',
   });
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onConfirm(formData);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      if (!items.length || !items[0].seller) {
+        throw new Error('Invalid vendor information');
+      }
+
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        vendor: items[0].seller,
+        shippingAddress: formData.shippingAddress,
+        paymentMethod: formData.paymentMethod,
+        customerName: formData.name,
+        customerEmail: formData.email
+      };
+
+      await onConfirm(orderData);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -26,6 +54,7 @@ function CheckoutForm({ items, onConfirm, onBack }) {
   return (
     <div className="checkout-form">
       <h2>Checkout Details</h2>
+      {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Full Name:</label>
@@ -50,41 +79,45 @@ function CheckoutForm({ items, onConfirm, onBack }) {
         <div className="form-group">
           <label>Shipping Address:</label>
           <textarea
-            name="address"
-            value={formData.address}
+            name="shippingAddress"
+            value={formData.shippingAddress}
             onChange={handleChange}
             required
           />
         </div>
         <div className="form-group">
-          <label>City:</label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
+          <label>Payment Method:</label>
+          <select
+            name="paymentMethod"
+            value={formData.paymentMethod}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="credit_card">Credit Card</option>
+            <option value="debit_card">Debit Card</option>
+            <option value="paypal">PayPal</option>
+          </select>
         </div>
-        <div className="form-group">
-          <label>ZIP Code:</label>
-          <input
-            type="text"
-            name="zipCode"
-            value={formData.zipCode}
-            onChange={handleChange}
-            required
-          />
-        </div>
+
         <div className="total-price">
           <h3>Total Price: ${totalPrice.toFixed(2)}</h3>
         </div>
+        
         <div className="button-group">
-          <button type="button" onClick={onBack} className="back-button">
+          <button 
+            type="button" 
+            onClick={onBack} 
+            className="back-button"
+            disabled={isSubmitting}
+          >
             Back to Cart
           </button>
-          <button type="submit" className="confirm-button">
-            Confirm Order
+          <button 
+            type="submit" 
+            className="confirm-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Processing...' : 'Confirm Order'}
           </button>
         </div>
       </form>

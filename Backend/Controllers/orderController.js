@@ -4,31 +4,139 @@ const { sendNotification } = require('../utils/notification');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { format } = require('date-fns');
+const mongoose = require('mongoose');
+
+async function generateOrderNumber() {
+  // Get the count of all orders and add 1
+  const count = await Order.countDocuments();
+  const date = new Date();
+  // Format: ORD-YYYYMMDD-XXXX (XXXX is a sequential number)
+  return `ORD-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${String(count + 1).padStart(4, '0')}`;
+}
+
+const createOrder = async (req, res) => {
+  try {
+    const { items, vendor, shippingAddress, paymentMethod } = req.body;
+    const userId = req.user.id;
+    if(!userId){
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Items are required and must be an array' });
+    }
+
+    // Extract vendor ID from vendor object or use directly if it's a string
+    const vendorId = vendor.id || vendor;
+
+    // Validate vendor exists
+    if (!mongoose.Types.ObjectId.isValid(vendorId)) {
+      return res.status(400).json({ message: 'Invalid vendor ID format' });
+    }
+
+    const vendorExists = await User.findById(vendorId);
+    if (!vendorExists) {
+      return res.status(400).json({ message: 'Invalid vendor' });
+    }
+
+    // Ensure each item has the required fields and valid ObjectIds
+    const formattedItems = [];
+    for (const item of items) {
+      // Check if productId exists
+      if (!item.productId) {
+        return res.status(400).json({ 
+          message: 'Product ID is required for each item',
+          item: item 
+        });
+      }
+
+      // Validate product ID format
+      if (!mongoose.Types.ObjectId.isValid(item.productId)) {
+        return res.status(400).json({ 
+          message: 'Invalid product ID format',
+          productId: item.productId 
+        });
+      }
+
+      // Validate required fields
+      if (!item.name || !item.quantity || !item.price) {
+        return res.status(400).json({ 
+          message: 'Each item must have name, quantity, and price',
+          item: item 
+        });
+      }
+
+      formattedItems.push({
+        productId: new mongoose.Types.ObjectId(item.productId),
+        name: item.name,
+        quantity: parseInt(item.quantity),
+        price: parseFloat(item.price),
+        subtotal: parseFloat(item.price) * parseInt(item.quantity)
+      });
+    }
+
+    // Calculate total
+    const total = formattedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+    // Generate order number
+    const orderNumber = await generateOrderNumber();
+
+    // Create new order
+    const order = new Order({
+      orderNumber,
+      customer: new mongoose.Types.ObjectId(userId),
+      vendor: new mongoose.Types.ObjectId(vendorId),
+      items: formattedItems,
+      total,
+      shippingAddress,
+      paymentMethod,
+      status: 'pending',
+      paymentStatus: 'pending'
+    });
+
+    await order.save();
+
+    // Send notification to vendor
+    await sendNotification({
+      userId: vendorId,
+      title: 'New Order Received',
+      message: `You have received a new order #${order.orderNumber}`
+    });
+
+    res.status(201).json(order);
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ 
+      message: 'Error creating order',
+      error: error.message,
+      details: error.stack
+    });
+  }
+};
 
 const getOrders = async (req, res) => {
   try {
     const {
       status,
-      vendor,
       dateRange,
       page = 1,
       limit = 10,
-      customerName,
       minAmount,
       maxAmount
     } = req.query;
+    
+    const userId = req.params.userId; // Get userId from params
 
-    const query = {};
+    const query = {
+      $or: [
+        { customer: userId },
+        { vendor: userId }
+      ]
+    };
 
     // Apply filters
     if (status) query.status = status;
-    if (vendor) query['vendor'] = vendor;
-    if (customerName) {
-      const customers = await User.find({
-        name: { $regex: customerName, $options: 'i' }
-      });
-      query['customer'] = { $in: customers.map(c => c._id) };
-    }
     if (dateRange) {
       const [startDate, endDate] = dateRange.split(':');
       query.createdAt = {
@@ -312,7 +420,10 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
+  createOrder,
   getOrders,
   getOrderHistory,
   updateOrderStatus,

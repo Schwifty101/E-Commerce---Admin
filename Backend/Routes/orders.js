@@ -2,6 +2,8 @@ const express = require('express');
 const { isAuthenticated, isAdmin } = require('../Middleware/auth');
 const orderController = require('../Controllers/orderController');
 const { validateOrderStatus, validateReturnAction } = require('../Middleware/validation');
+const { protect } = require('../Middleware/protect');
+
 
 const router = express.Router();
 
@@ -17,5 +19,6 @@ router.post('/:id/returns', isAuthenticated, isAdmin, validateReturnAction, orde
 
 // Order details route
 router.get('/:id', isAuthenticated, isAdmin, orderController.getOrderDetails);
+router.post('/create', protect, orderController.createOrder);
 
 module.exports = router; 

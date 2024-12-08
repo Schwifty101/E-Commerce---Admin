@@ -339,7 +339,11 @@ const getCartProducts = async (req, res, next) => {
     const user = await User.findById(req.user.id)
       .populate({
         path: 'cart.product',
-        select: 'name price images'
+        select: 'name price images seller', // Include the seller field
+        populate: {
+          path: 'seller', // Populate the seller field to get the details
+          select: 'name email' // Only include necessary seller details
+        }
       });
 
     if (!user) {
@@ -352,7 +356,8 @@ const getCartProducts = async (req, res, next) => {
       price: item.product.price,
       quantity: item.quantity,
       image: item.product.images[0], // Get first image
-      subtotal: item.product.price * item.quantity
+      subtotal: item.product.price * item.quantity,
+      seller: item.product.seller // Include the populated seller
     }));
 
     res.json({

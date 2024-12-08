@@ -1,52 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CartItem from '../components/Cart/CartItem';
 import CheckoutForm from '../components/Cart/CheckoutForm';
 import OrderConfirmation from '../components/Cart/OrderConfirmation';
 import '../styling/cart.css'
-// Sample data - replace with your actual data source
-const initialItems = [
-  {
-    id: 1,
-    title: "Smartphone",
-    price: 699.99,
-    image: "https://picsum.photos/200/300",
-    quantity: 1
-  },
-  {
-    id: 2,
-    title: "Laptop",
-    price: 1299.99,
-    image: "https://picsum.photos/200/300",
-    quantity: 1
-  },
-  {
-    id: 3,
-    title: "Headphones",
-    price: 199.99,
-    image: "https://picsum.photos/200/300",
-    quantity: 1
-  }
-];
 
 function CartPage({ onBack }) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState([]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleQuantityChange = (itemId, newQuantity) => {
-    setItems(items.map(item =>
-      item.id === itemId ? { ...item, quantity: newQuantity } : item
-    ));
+  useEffect(() => {
+    fetchCartProducts();
+  }, []);
+
+  const fetchCartProducts = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:3000/api/users/displayCart', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      
+      const { data } = await response.json();
+      setItems(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleQuantityChange = async (productId, newQuantity) => {
+    // You'll need to implement an API endpoint for updating quantity
+    try {
+      // Update locally first for immediate feedback
+      setItems(items.map(item =>
+        item.productId === productId ? { ...item, quantity: newQuantity } : item
+      ));
+      
+      // Then update on the server
+      // await updateCartItemQuantity(productId, newQuantity);
+    } catch (err) {
+      // Revert on error
+      fetchCartProducts();
+    }
   };
 
   const handleCheckout = () => {
     setIsCheckingOut(true);
   };
 
-  const handleConfirmOrder = (formData) => {
-    // Here you would typically send the order to your backend
-    console.log('Order confirmed:', { items, formData });
-    setIsOrderConfirmed(true);
+  const handleConfirmOrder = async (orderData) => {
+    try {
+      const response = await fetch('http://127.0.0.1:3000/api/orders/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create order');
+      }
+
+      setIsOrderConfirmed(true);
+    } catch (err) {
+      setError(err.message);
+      throw err; // Propagate error back to CheckoutForm
+    }
   };
 
   const handleBack = () => {
@@ -54,7 +82,7 @@ function CartPage({ onBack }) {
       setIsOrderConfirmed(false);
       setIsCheckingOut(false);
       // Optionally reset the cart here
-      setItems(initialItems);
+      setItems([]);
     } else if (isCheckingOut) {
       setIsCheckingOut(false);
     }
@@ -68,6 +96,14 @@ function CartPage({ onBack }) {
     return <CheckoutForm items={items} onConfirm={handleConfirmOrder} onBack={handleBack} />;
   }
 
+  if (isLoading) {
+    return <div>Loading cart...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
     <div className="cart-page">
       <div className="cart-header">
@@ -77,17 +113,23 @@ function CartPage({ onBack }) {
         <h1>Your Cart</h1>
       </div>
       <div className="cart-items">
-        {items.map(item => (
-          <CartItem
-            key={item.id}
-            item={item}
-            onQuantityChange={handleQuantityChange}
-          />
-        ))}
+        {items.length === 0 ? (
+          <p>Your cart is empty</p>
+        ) : (
+          items.map(item => (
+            <CartItem
+              key={item.productId}
+              item={item}
+              onQuantityChange={handleQuantityChange}
+            />
+          ))
+        )}
       </div>
-      <button onClick={handleCheckout} className="checkout-button">
-        Proceed to Checkout
-      </button>
+      {items.length > 0 && (
+        <button onClick={handleCheckout} className="checkout-button">
+          Proceed to Checkout
+        </button>
+      )}
     </div>
   );
 }
