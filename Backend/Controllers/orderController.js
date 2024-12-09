@@ -420,7 +420,71 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
+const getDeliveredOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
 
+    const query = {
+      customer: userId,
+      status: 'delivered'
+    };
+
+    const total = await Order.countDocuments(query);
+    const orders = await Order.find(query)
+      .populate('customer', 'name email')
+      .populate('vendor', 'name email')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      orders,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching delivered orders:', error);
+    res.status(500).json({ message: 'Error fetching delivered orders' });
+  }
+};
+
+const getNonDeliveredOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const query = {
+      customer: userId,
+      status: { $ne: 'delivered' }  // get all orders where status is not 'delivered'
+    };
+
+    const total = await Order.countDocuments(query);
+    const orders = await Order.find(query)
+      .populate('customer', 'name email')
+      .populate('vendor', 'name email')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      orders,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching non-delivered orders:', error);
+    res.status(500).json({ message: 'Error fetching non-delivered orders' });
+  }
+};
 
 module.exports = {
   createOrder,
@@ -430,5 +494,7 @@ module.exports = {
   getReturnRequests,
   processReturnRequest,
   exportOrders,
-  getOrderDetails
+  getOrderDetails,
+  getDeliveredOrders,
+  getNonDeliveredOrders
 }; 

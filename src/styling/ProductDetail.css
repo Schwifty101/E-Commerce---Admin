@@ -72,7 +72,7 @@
 .product-info-title {
   font-size: 2rem;
   font-weight: bold;
-  color: #1f2937;
+  color: #e6e6e6;
   margin-bottom: 1rem;
 }
 
@@ -192,6 +192,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  width: 50%;
   padding-top: 2rem;
   border-top: 1px solid #e5e7eb;
 }

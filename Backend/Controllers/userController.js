@@ -5,7 +5,7 @@ const { createUserSchema } = require('../utils/validation');
 const { AppError } = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const { validateSignup, validateLogin } = require('../validators/auth.validator.js');
-
+const { validateUserUpdate } = require('../validators/user.validator.js');
 
 const getAllUsers = async (req, res) => {
   try {

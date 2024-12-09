@@ -92,6 +92,56 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+orderSchema.post('save', async function(doc) {
+  try {
+      // Update analytics with the new/updated order
+      await Analytics.updateOrderMetrics(doc);
+      
+      // If this is a status change, log it in system logs
+      if (doc.isModified('status')) {
+          await Analytics.logUserActivity(
+              doc.customer,
+              `order_${doc.status}`,
+              null // IP address not available in middleware
+          );
+      }
+  } catch (error) {
+      console.error('Error updating analytics:', error);
+  }
+});
+
+// Add middleware to update analytics for bulk operations
+orderSchema.post('updateMany', async function(result) {
+  try {
+      await Analytics.updateOrderMetrics();
+  } catch (error) {
+      console.error('Error updating analytics after bulk update:', error);
+  }
+});
+
+// Add method to get order analytics
+orderSchema.statics.getAnalytics = async function(startDate, endDate) {
+  return this.aggregate([
+      {
+          $match: {
+              createdAt: { $gte: startDate, $lte: endDate }
+          }
+      },
+      {
+          $group: {
+              _id: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+              },
+              orderCount: { $sum: 1 },
+              revenue: { $sum: "$total" },
+              averageOrderValue: { $avg: "$total" }
+          }
+      },
+      {
+          $sort: { _id: 1 }
+      }
+  ]);
+};
 
 // Generate order number before saving
 orderSchema.pre('save', async function(next) {

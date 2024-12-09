@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
-export function HeroSection() {
+export function HeroSection({ onShopNowClick }) {
   return (
     <div className="hero">
       <div className="container hero-content">
@@ -11,7 +11,7 @@ export function HeroSection() {
         <p className="hero-description">
           Shop the most innovative gadgets and electronics from trusted sellers worldwide.
         </p>
-        <button className="hero-button">
+        <button className="hero-button" onClick={onShopNowClick}>
           <span>Shop Now</span>
           <ArrowRight className="h-5 w-5" />
         </button>

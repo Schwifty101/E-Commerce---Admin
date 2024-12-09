@@ -356,8 +356,25 @@ const deleteProduct = (async (req, res) => {
     res.json({ message: 'Product removed' });
 });
 
+// Get all products without filtering
+const getAllProducts = async (req, res) => {
+    try {
+        const products = await Product.find({})
+            .populate('seller', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.json(products);
+    } catch (error) {
+        console.error('Error fetching all products:', error);
+        res.status(500).json({ 
+            message: 'Error fetching all products',
+            error: error.message 
+        });
+    }
+};
 
 module.exports = {
+    getAllProducts,
     getProducts,
     getFlaggedProducts,
     approveProduct,

@@ -15,6 +15,27 @@ import '../styling/Footer.css';
 
 function BuyerHomePage({ onProductClick, searchResults }) {
   const [sortBy, setSortBy] = useState('default');
+  const [allProducts, setAllProducts] = useState(null);
+
+  const handleShopNowClick = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://127.0.0.1:3000/api/users/products/getallproducts', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      
+      const data = await response.json();
+      setAllProducts(data);
+    } catch (error) {
+      console.error('Error fetching all products:', error);
+    }
+  };
 
   const sortProducts = (products) => {
     if (!products) return [];
@@ -34,7 +55,9 @@ function BuyerHomePage({ onProductClick, searchResults }) {
 
   return (
     <>
-      {!searchResults && <HeroSection />}
+      {!searchResults && !allProducts && (
+        <HeroSection onShopNowClick={handleShopNowClick} />
+      )}
       <main className="main-content">
         {searchResults ? (
           <ProductSection 
@@ -43,7 +66,14 @@ function BuyerHomePage({ onProductClick, searchResults }) {
             onProductClick={onProductClick}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            class
+          />
+        ) : allProducts ? (
+          <ProductSection 
+            title="All Products" 
+            products={sortProducts(allProducts)}
+            onProductClick={onProductClick}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         ) : (
           <>

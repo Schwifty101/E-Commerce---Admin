@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Analytics = mongoose.models.Analytics || require('./Analytics');
 
 // Define sub-schemas first
 const reportSchema = new mongoose.Schema({
@@ -120,6 +121,104 @@ productSchema.virtual('sellerName', {
 productSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
+});
+productSchema.statics.getTopSellingProducts = async function(startDate, endDate, limit = 10, sortBy = 'revenue') {
+  try {
+      const Order = mongoose.model('Order');
+      
+      const pipeline = [
+          {
+              $match: {
+                  createdAt: { 
+                      $gte: new Date(startDate), 
+                      $lte: new Date(endDate) 
+                  },
+                  status: { $in: ['delivered', 'shipped'] }
+              }
+          },
+          {
+              $unwind: '$items'
+          },
+          {
+              $group: {
+                  _id: '$items.productId',
+                  totalSales: { $sum: '$items.quantity' },
+                  totalRevenue: { $sum: '$items.subtotal' }
+              }
+          },
+          {
+              $sort: sortBy === 'sales' 
+                  ? { totalSales: -1 } 
+                  : { totalRevenue: -1 }
+          },
+          {
+              $limit: parseInt(limit) || 10
+          },
+          {
+              $lookup: {
+                  from: 'products',
+                  localField: '_id',
+                  foreignField: '_id',
+                  as: 'productDetails'
+              }
+          },
+          {
+              $unwind: {
+                  path: '$productDetails',
+                  preserveNullAndEmptyArrays: true
+              }
+          },
+          {
+              $project: {
+                  _id: 1,
+                  name: { $ifNull: ['$productDetails.name', 'Unknown Product'] },
+                  category: { $ifNull: ['$productDetails.category', 'Uncategorized'] },
+                  image: { 
+                      $ifNull: [
+                          '$productDetails.image', 
+                          'https://via.placeholder.com/150'
+                      ] 
+                  },
+                  totalSales: 1,
+                  totalRevenue: 1
+              }
+          }
+      ];
+
+      const results = await Order.aggregate(pipeline);
+      return results || [];
+      
+  } catch (error) {
+      console.error('Error in getTopSellingProducts:', error);
+      return [];
+  }
+};
+
+// Add middleware to update analytics after product changes
+productSchema.post('save', async function(doc) {
+  try {
+      await Analytics.updateProductMetrics();
+      
+      // Log new product additions
+      if (doc.isNew) {
+          await Analytics.logUserActivity(
+              doc.seller,
+              'product_added',
+              null
+          );
+      }
+  } catch (error) {
+      console.error('Error updating product analytics:', error);
+  }
+});
+
+// Add middleware for bulk operations
+productSchema.post('updateMany', async function() {
+  try {
+      await Analytics.updateProductMetrics();
+  } catch (error) {
+      console.error('Error updating analytics after bulk update:', error);
+  }
 });
 
 // Export schemas for potential reuse

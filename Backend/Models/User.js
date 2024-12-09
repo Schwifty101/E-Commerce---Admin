@@ -97,6 +97,32 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+userSchema.post('save', async function(doc) {
+  try {
+      await Analytics.updateUserMetrics();
+      
+      // Log new user registrations
+      if (doc.isNew) {
+          await Analytics.logUserActivity(
+              doc._id,
+              'user_registered',
+              null
+          );
+      }
+  } catch (error) {
+      console.error('Error updating user analytics:', error);
+  }
+});
+
+// Add middleware for bulk operations
+userSchema.post('updateMany', async function() {
+  try {
+      await Analytics.updateUserMetrics();
+  } catch (error) {
+      console.error('Error updating analytics after bulk update:', error);
+  }
+});
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {

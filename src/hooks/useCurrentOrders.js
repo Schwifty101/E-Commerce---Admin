@@ -1,28 +1,5 @@
 import { useState, useEffect } from 'react';
-
-// Sample data - replace with actual API call
-const sampleCurrentOrders = [
-  {
-    id: 1,
-    date: '2024-03-20',
-    title: 'Gaming Laptop Pro',
-    description: 'High-performance gaming laptop with RTX 4080',
-    price: 1999.99,
-    image: 'https://picsum.photos/200/300',
-    sellerName: 'Gaming Tech Ltd',
-    status: 'in_process'
-  },
-  {
-    id: 2,
-    date: '2024-03-19',
-    title: 'Wireless Earbuds',
-    description: 'Premium wireless earbuds with noise cancellation',
-    price: 199.99,
-    image: 'https://picsum.photos/200/300',
-    sellerName: 'Audio Plus',
-    status: 'on_the_way'
-  }
-];
+import axios from 'axios';
 
 export function useCurrentOrders() {
   const [orders, setOrders] = useState([]);
@@ -32,12 +9,16 @@ export function useCurrentOrders() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setOrders(sampleCurrentOrders);
-        setIsLoading(false);
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://127.0.0.1:3000/api/orders/getAllOrders/non-delivered', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setOrders(response.data.orders);
       } catch (err) {
-        setError('Failed to load current orders');
+        setError(err.message);
+      } finally {
         setIsLoading(false);
       }
     };

@@ -1,15 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import UserInfoForm from './UserInfoForm';
-import { useUserData } from '../../hooks/useUserData';
 
 function UserInfo() {
   const [isEditing, setIsEditing] = useState(false);
-  const { userData, updateUserData } = useUserData();
+  const [userData, setUserData] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleUpdateInfo = (newInfo) => {
-    updateUserData(newInfo);
-    setIsEditing(false);
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:3000/api/users/profile', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+
+      const { data } = await response.json();
+      setUserData(data);
+    } catch (error) {
+      setError(error.message);
+      console.error('Error fetching profile:', error);
+    }
   };
+
+  // Handle profile updates
+  const handleUpdateInfo = async (newInfo) => {
+    try {
+      const response = await fetch('http://127.0.0.1:3000/api/users/profile/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: newInfo.name,
+          email: newInfo.email,
+          phone: newInfo.phone
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update profile');
+      }
+
+      const { data } = await response.json();
+      setUserData(data);
+      setIsEditing(false);
+    } catch (error) {
+      setError(error.message);
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
+
+  if (!userData) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="user-info-section">

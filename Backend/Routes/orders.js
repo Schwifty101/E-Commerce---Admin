@@ -20,5 +20,7 @@ router.post('/:id/returns', isAuthenticated, isAdmin, validateReturnAction, orde
 // Order details route
 router.get('/:id', isAuthenticated, isAdmin, orderController.getOrderDetails);
 router.post('/create', protect, orderController.createOrder);
+router.get('/getAllOrders/delivered',protect, orderController.getDeliveredOrders);
+router.get('/getAllOrders/non-delivered',protect, orderController.getNonDeliveredOrders);
 
 module.exports = router; 

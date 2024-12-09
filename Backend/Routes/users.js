@@ -25,7 +25,7 @@ router.get('/buyers/pending', isAuthenticated, isAdmin, userController.getPendin
 router.post('/buyers/:id/verify', isAuthenticated, isAdmin, userController.verifyBuyer);
 
 router.get('/profile',protect , userController.getUserProfile);
-router.put('/profile' ,protect ,userController.updateUserProfile);
+router.put('/profile/update' ,protect ,userController.updateUserProfile);
 router.get('/orders' ,protect ,userController.getUserOrders);
 router.use('/products', require('./products.js'));
 router.post('/reviews/:productId', protect, submitReview);

@@ -1,4 +1,4 @@
-exports.validateUserUpdate = (data) => {
+const validateUserUpdate = (data) => {
   const errors = [];
 
   if (data.email && !isValidEmail(data.email)) {
@@ -23,3 +23,5 @@ function isValidEmail(email) {
 function isValidPhone(phone) {
   return /^\+?[\d\s-]{10,}$/.test(phone);
 }
+
+module.exports = { validateUserUpdate };

@@ -164,73 +164,53 @@
 
 /* Order History Section */
 .order-history-section {
+  padding: 20px;
   background: white;
-  padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .order-item {
-  display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-.order-image-container {
-  flex-shrink: 0;
-}
-
-.order-image {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
+  border: 1px solid #eee;
+  margin-bottom: 15px;
+  padding: 15px;
   border-radius: 4px;
-}
-
-.order-details {
-  flex: 1;
 }
 
 .order-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
 .order-date {
   color: #666;
-  font-size: 0.9rem;
 }
 
-.order-description {
-  color: #666;
-  margin-bottom: 1rem;
+.order-details {
+  margin-bottom: 10px;
 }
 
-.order-footer {
+.order-items {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin: 5px 0;
 }
 
-.order-price {
-  font-weight: bold;
-  color: #2c3e50;
-  font-size: 1.1rem;
-}
-
-.seller-name {
+.loading, .error, .no-orders {
+  text-align: center;
+  padding: 20px;
   color: #666;
-  font-size: 0.9rem;
+}
+
+.error {
+  color: #dc3545;
 }
 @media (max-width: 1024px) {
   .profile-content{
@@ -239,15 +219,4 @@
   .order-item {
     flex-direction: column;
   }
-}
-.loading,
-.error,
-.no-orders {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-.error {
-  color: #dc3545;
 }
