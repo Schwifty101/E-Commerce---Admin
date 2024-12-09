@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Order = require('../models/Order');
+const Order = require('../Models/Order');
 const dotenv = require('dotenv');
 const seedProducts = require('./productSeeder');
 
@@ -21,16 +21,45 @@ const createOrders = async (buyers, products, admin) => {
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
   const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-  for (let i = 0; i < 20; i++) {
-    const buyer = getRandomItem(buyers);
-    const numItems = getRandomNumber(1, 3);
+  // Calculate more realistic order numbers
+  const ordersPerBuyer = 3; // Average 2 orders per buyer
+  const totalOrders = buyers.length * ordersPerBuyer;
+
+  for (let i = 0; i < totalOrders; i++) {
+    // Make more recent orders more likely
+    const daysAgo = Math.floor(Math.pow(Math.random(), 2) * 30); // Weighted towards recent dates
+    const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+
+    // More realistic order quantities and amounts
+    const numItems = getRandomNumber(1, 5); // Allow up to 5 items per order
     const orderItems = [];
+    const buyer = getRandomItem(buyers);
     let total = 0;
+
+    // Adjust status probabilities
+    const statusProbabilities = {
+      'delivered': 0.5,    // 50% delivered
+      'shipped': 0.2,      // 20% shipped
+      'processing': 0.15,  // 15% processing
+      'pending': 0.1,      // 10% pending
+      'cancelled': 0.03,   // 3% cancelled
+      'returned': 0.02     // 2% returned
+    };
+
+    const status = (() => {
+      const rand = Math.random();
+      let cumulative = 0;
+      for (const [status, prob] of Object.entries(statusProbabilities)) {
+        cumulative += prob;
+        if (rand <= cumulative) return status;
+      }
+      return 'delivered';
+    })();
 
     // Create order items using only approved products
     for (let j = 0; j < numItems; j++) {
       const product = getRandomItem(products);
-      const quantity = getRandomNumber(1, 5);
+      const quantity = getRandomNumber(1, 3); // More realistic quantities
       const subtotal = product.price * quantity;
       total += subtotal;
 
@@ -46,9 +75,8 @@ const createOrders = async (buyers, products, admin) => {
     // Use the seller from the first product as the vendor
     const vendor = products.find(p => p._id === orderItems[0].productId).seller;
 
-    const status = getRandomItem(statuses);
     const paymentStatus = getRandomItem(paymentStatuses);
-    const createdAt = new Date(Date.now() - getRandomNumber(0, 30) * 24 * 60 * 60 * 1000);
+    const paymentMethod = getRandomItem(paymentMethods);
 
     const order = {
       orderNumber: generateOrderNumber(i),
@@ -65,7 +93,7 @@ const createOrders = async (buyers, products, admin) => {
         country: 'United States'
       },
       paymentStatus: paymentStatus,
-      paymentMethod: getRandomItem(paymentMethods),
+      paymentMethod: paymentMethod,
       statusLogs: [
         {
           status: 'pending',

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const {Product} = require('../Models/Product');
-const User = require('../models/User');
+const { Product } = require('../Models/Product');
+const User = require('../Models/User');
 const dotenv = require('dotenv');
 const seedUsers = require('./userSeeder');
 
@@ -22,17 +22,17 @@ const createProducts = async (sellers, admin) => {
   };
 
   sellers.forEach(seller => {
-    const numProducts = getRandomNumber(3, 7);
-    
-    for (let i = 0; i < numProducts; i++) {
+    const productsPerSeller = 15;
+
+    for (let i = 0; i < productsPerSeller; i++) {
       const category = getRandomItem(categories);
       const status = getRandomItem(statuses);
       const createdAt = new Date(Date.now() - getRandomNumber(0, 30) * 24 * 60 * 60 * 1000);
 
       const product = {
         name: getRandomItem(productNames[category]),
-        price: getRandomNumber(1000, 50000) / 100,
-        stock: getRandomNumber(0, 100),
+        price: getRandomNumber(1, 1000) / 20,
+        stock: getRandomNumber(10, 50),
         category,
         image: `https://picsum.photos/seed/${Math.random()}/200`,
         status,

@@ -11,7 +11,7 @@ const generateDailyAnalytics = async (date) => {
     try {
         const dayStart = new Date(date.setHours(0, 0, 0, 0));
         const dayEnd = new Date(date.setHours(23, 59, 59, 999));
-        
+
         // Get orders for the day
         const dailyOrders = await Order.find({
             createdAt: { $gte: dayStart, $lte: dayEnd }
@@ -49,9 +49,13 @@ const generateDailyAnalytics = async (date) => {
                     _id: null,
                     total: { $sum: 1 },
                     active: { $sum: { $cond: [{ $eq: ['$verificationStatus', 'active'] }, 1, 0] } },
-                    new: { $sum: { $cond: [
-                        { $gte: ['$createdAt', dayStart] }, 1, 0
-                    ] } },
+                    new: {
+                        $sum: {
+                            $cond: [
+                                { $gte: ['$createdAt', dayStart] }, 1, 0
+                            ]
+                        }
+                    },
                     buyers: { $sum: { $cond: [{ $eq: ['$role', 'buyer'] }, 1, 0] } },
                     sellers: { $sum: { $cond: [{ $eq: ['$role', 'seller'] }, 1, 0] } },
                     pending: { $sum: { $cond: [{ $eq: ['$verificationStatus', 'pending'] }, 1, 0] } },
@@ -154,12 +158,12 @@ const seedAnalytics = async () => {
         // Generate analytics for the last 30 days
         const analyticsData = [];
         const today = new Date();
-        
+
         for (let i = 30; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
             console.log(`Generating analytics for ${date.toISOString().split('T')[0]}`);
-            
+
             const dailyAnalytics = await generateDailyAnalytics(date);
             analyticsData.push(dailyAnalytics);
         }

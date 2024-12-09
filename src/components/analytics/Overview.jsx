@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
+import { analyticsService } from '../../services/analyticsService';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -21,12 +22,40 @@ ChartJS.register(
 );
 
 const Overview = () => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await analyticsService.getOverviewStats();
+                console.log(data.stats);
+                setStats(data.stats);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    if (loading) return <div className="text-center py-4">Loading...</div>;
+    if (error) return <div className="text-red-500 py-4">Error: {error}</div>;
+    if (!stats) return null;
+
     const data = {
-        labels: ['Revenue', 'Orders', 'Users', 'Products'],
+        labels: ['Orders', 'Users', 'Products'],
         datasets: [
             {
                 label: 'Metrics Overview',
-                data: [1500, 500, 1200, 100],
+                data: [
+                    stats.totalOrders,
+                    stats.totalCustomers,
+                    stats.totalProducts
+                ],
                 backgroundColor: [
                     'rgba(76, 175, 80, 0.7)',  // Green
                     'rgba(255, 193, 7, 0.7)',  // Yellow

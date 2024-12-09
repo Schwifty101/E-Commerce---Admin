@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tab, Tabs, Button} from '@mui/material';
+import { Box, Tab, Tabs, Button } from '@mui/material';
 import { orderService } from '../services/orderService';
 import OrderList from '../components/orders/OrderList';
 import OrderDetails from '../components/orders/OrderDetails';
@@ -100,13 +100,14 @@ const OrderManagement = () => {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-        <Button
-          variant="contained"
+        <button
           onClick={handleExport}
-          className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+          className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg 
+                    hover:bg-blue-700 transition-colors duration-200 
+                    focus:ring-2 focus:ring-blue-200"
         >
-          Export Orders
-        </Button>
+          Export Analytics Data
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow">
