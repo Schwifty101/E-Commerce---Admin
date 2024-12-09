@@ -6,10 +6,10 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const createUsers = () => {
-  const roles = ['admin', 'seller', 'buyer'];
-  const verificationStatuses = ['pending', 'active', 'banned'];
   const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston'];
   const states = ['NY', 'CA', 'IL', 'TX'];
+  const numBuyers = 50;
+  const numSellers = 10;
 
   const users = [
     // Admin users
@@ -34,7 +34,7 @@ const createUsers = () => {
     },
 
     // Sellers
-    ...[...Array(5)].map((_, index) => ({
+    ...[...Array(numSellers)].map((_, index) => ({
       name: `Seller ${index + 1}`,
       email: `seller${index + 1}@example.com`,
       password: 'seller123',
@@ -60,7 +60,7 @@ const createUsers = () => {
     })),
 
     // Buyers
-    ...[...Array(10)].map((_, index) => ({
+    ...[...Array(numBuyers)].map((_, index) => ({
       name: `Buyer ${index + 1}`,
       email: `buyer${index + 1}@example.com`,
       password: 'buyer123',
