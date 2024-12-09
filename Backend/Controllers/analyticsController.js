@@ -9,13 +9,59 @@ const analyticsController = {
         try {
             const today = new Date();
             const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-
-            // Use the new getDateRangeMetrics method
-            const currentStats = await Analytics.getDateRangeMetrics(lastMonth, today);
             const previousMonth = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
-            const previousStats = await Analytics.getDateRangeMetrics(previousMonth, lastMonth);
+
+            // Get current and previous stats in parallel
+            const [currentStats, previousStats] = await Promise.all([
+                Analytics.aggregate([
+                    {
+                        $match: {
+                            date: { $gte: lastMonth, $lte: today }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: { $sum: '$metrics.revenue.total' },
+                            activeUsers: { $sum: '$metrics.users.active' },
+                            totalOrders: { $sum: '$metrics.orders.total' },
+                            totalOrderValue: { $sum: '$metrics.orders.total' },
+                            orderCount: { $sum: '$metrics.orders.total' },
+                            totalCustomers: { $sum: '$metrics.users.buyers' },
+                            totalProducts: { $sum: '$metrics.products.total' }
+                        }
+                    }
+                ]),
+                Analytics.aggregate([
+                    {
+                        $match: {
+                            date: { $gte: previousMonth, $lte: lastMonth }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: { $sum: '$metrics.revenue.total' },
+                            activeUsers: { $sum: '$metrics.users.active' },
+                            totalOrders: { $sum: '$metrics.orders.total' },
+                            totalOrderValue: { $sum: '$metrics.orders.total' },
+                            orderCount: { $sum: '$metrics.orders.total' }
+                        }
+                    }
+                ])
+            ]);
 
             const current = currentStats[0] || {
+                totalRevenue: 0,
+                activeUsers: 0,
+                totalOrders: 0,
+                totalOrderValue: 0,
+                orderCount: 0,
+                totalCustomers: 0,
+                totalProducts: 0
+            };
+
+            const previous = previousStats[0] || {
                 totalRevenue: 0,
                 activeUsers: 0,
                 totalOrders: 0,
@@ -23,16 +69,9 @@ const analyticsController = {
                 orderCount: 0
             };
 
-            const previous = previousStats[0] || {
-                totalRevenue: 0,
-                activeUsers: 0,
-                totalOrders: 0,
-                totalOrderValue: 0
-            };
-
             // Calculate growth percentages
             const calculateGrowth = (current, previous) => {
-                if (previous === 0) return 0;
+                if (previous === 0) return current === 0 ? 0 : 100;
                 return ((current - previous) / previous) * 100;
             };
 
@@ -42,23 +81,19 @@ const analyticsController = {
                 orders: calculateGrowth(current.totalOrders, previous.totalOrders),
                 orderValue: calculateGrowth(
                     current.orderCount ? current.totalOrderValue / current.orderCount : 0,
-                    previous.totalOrders ? previous.totalOrderValue / previous.totalOrders : 0
+                    previous.orderCount ? previous.totalOrderValue / previous.orderCount : 0
                 )
             };
 
+            // Match the structure expected by the frontend
             res.json({
-                success: true,
-                data: {
-                    stats: {
-                        totalRevenue: current.totalRevenue,
-                        activeUsers: current.activeUsers,
-                        totalOrders: current.totalOrders,
-                        averageOrderValue: current.orderCount
-                            ? current.totalOrderValue / current.orderCount
-                            : 0
-                    },
-                    growth
-                }
+                stats: {
+                    totalRevenue: current.totalRevenue,
+                    totalOrders: current.totalOrders,
+                    totalCustomers: current.totalCustomers,
+                    totalProducts: current.totalProducts
+                },
+                growth
             });
 
         } catch (error) {

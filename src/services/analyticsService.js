@@ -10,8 +10,8 @@ export const analyticsService = {
             const response = await axios.get(`${BASE_URL}/overview`, {
                 withCredentials: true
             });
-
-            return response.data.data;
+            console.log(response.data);
+            return response.data;
         } catch (error) {
             console.error('Error fetching overview stats:', error);
             throw new Error(error.response?.data?.message || 'Failed to fetch overview statistics');

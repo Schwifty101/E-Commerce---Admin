@@ -3,7 +3,7 @@ import { analyticsService } from '../../services/analyticsService';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { ChartBarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 const TopProducts = () => {
     const [loading, setLoading] = useState(true);
@@ -20,6 +20,7 @@ const TopProducts = () => {
                     sortBy,
                     limit: 10
                 });
+                console.log(response);
                 setData(response);
             } catch (error) {
                 console.error('Error fetching top products:', error);

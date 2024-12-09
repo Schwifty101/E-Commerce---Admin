@@ -1,18 +1,18 @@
 import { DollarSign, ShoppingBag, Users, Package } from 'lucide-react';
 import StatsCard from '../components/dashboard/StatsCard';
-import RecentOrders from '../components/dashboard/RecentOrders';
+import TopProducts from '../components/analytics/TopProducts';
 import { useEffect, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
 
 const Dashboard = () => {
   const [revenueData, setRevenueData] = useState({ totalRevenue: 0, growth: 0 });
+  const [overviewStats, setOverviewStats] = useState({ totalOrders: 0, totalCustomers: 0, totalProducts: 0 });
+  const [growthData, setGrowthData] = useState({ revenue: 0, users: 0, orders: 0, orderValue: 0 });
 
-  console.log(revenueData);
   useEffect(() => {
     const fetchRevenueData = async () => {
       try {
         const data = await analyticsService.getRevenueAnalytics({ period: '30days' });
-        console.log('Growth:', data.summary.growth);
         setRevenueData(data.summary);
       } catch (error) {
         console.error('Failed to fetch revenue data:', error);
@@ -22,49 +22,71 @@ const Dashboard = () => {
     fetchRevenueData();
   }, []);
 
+  useEffect(() => {
+    const fetchOverviewStats = async () => {
+      try {
+        const data = await analyticsService.getOverviewStats();
+        setOverviewStats(data.stats);
+        setGrowthData(data.growth);
+      } catch (error) {
+        console.error('Failed to fetch overview stats:', error);
+      }
+    };
+
+    fetchOverviewStats();
+  }, []);
+
   const formatNumber = (number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
   };
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="text-gray-600 mt-1">Track your business performance and growth</p>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <StatsCard
-          title="Total Sales"
-          value={formatNumber(revenueData.totalRevenue)}
-          icon={DollarSign}
-          trend={typeof revenueData.growth === 'number' ? revenueData.growth : 0}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Total Orders"
-          value={revenueData.totalOrders}
-          icon={ShoppingBag}
-          trend={3}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Total Customers"
-          value="1,245"
-          icon={Users}
-          trend={15}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Products in Stock"
-          value="534"
-          icon={Package}
-          trend={-3}
-          trendLabel="vs last month"
-        />
-      </div>
+        {/* Stats Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatsCard
+            title="Total Sales"
+            value={formatNumber(revenueData.totalRevenue)}
+            icon={DollarSign}
+            trend={Math.floor(growthData.revenue)}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Total Orders"
+            value={overviewStats.totalOrders}
+            icon={ShoppingBag}
+            trend={growthData.orders}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Total Customers"
+            value={overviewStats.totalCustomers}
+            icon={Users}
+            trend={growthData.users}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Products in Stock"
+            value={overviewStats.totalProducts}
+            icon={Package}
+            trend={growthData.orderValue}
+            trendLabel="vs last month"
+          />
+        </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        {/* <RecentOrders orders={} /> */}
+        {/* Top Products Section */}
+        <div className="grid grid-cols-1 gap-6">
+          <TopProducts />
+        </div>
       </div>
     </div>
   );
