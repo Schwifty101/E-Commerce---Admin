@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tab, Tabs, Button, Typography } from '@mui/material';
+import { Box, Tab, Tabs, Button} from '@mui/material';
 import { orderService } from '../services/orderService';
 import OrderList from '../components/orders/OrderList';
 import OrderDetails from '../components/orders/OrderDetails';
@@ -14,30 +14,15 @@ const OrderManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0
-  });
 
-  // Fetch orders with filters
-  const fetchOrders = async (page = 1) => {
+  // Simplified fetchOrders without pagination
+  const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await orderService.getOrders({
-        page,
-        limit: pagination.limit,
-        // Add any additional filters here if needed
-      });
-
-      if (response.orders && response.pagination) {
+      const response = await orderService.getOrders();
+      if (response.orders) {
+        console.log(response.orders);
         setOrders(response.orders);
-        setPagination(prev => ({
-          ...prev,
-          page: response.pagination.currentPage || page,
-          total: response.pagination.total || 0,
-          limit: response.pagination.limit || prev.limit
-        }));
       }
     } catch (error) {
       toast.error(error.message || 'Failed to fetch orders');
@@ -72,7 +57,7 @@ const OrderManagement = () => {
     try {
       await orderService.updateOrderStatus(orderId, statusData);
       toast.success('Order status updated successfully');
-      fetchOrders(pagination.page);
+      fetchOrders();
       setIsStatusModalOpen(false);
     } catch (error) {
       toast.error(error.message || 'Failed to update order status');
@@ -115,8 +100,8 @@ const OrderManagement = () => {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           onClick={handleExport}
           className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
         >
@@ -144,7 +129,7 @@ const OrderManagement = () => {
                   >
                     Back to Orders
                   </Button>
-                  <OrderDetails 
+                  <OrderDetails
                     order={selectedOrder}
                     onBack={() => setSelectedOrder(null)}
                     onStatusUpdate={() => setIsStatusModalOpen(true)}
@@ -154,9 +139,6 @@ const OrderManagement = () => {
                 <OrderList
                   orders={orders}
                   onOrderClick={setSelectedOrder}
-                  currentPage={pagination.page}
-                  totalPages={Math.ceil(pagination.total / pagination.limit)}
-                  onPageChange={fetchOrders}
                   loading={loading}
                 />
               )}

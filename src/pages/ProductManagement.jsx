@@ -14,6 +14,11 @@ const ProductManagement = () => {
   const [rejectionReason, setRejectionReason] = React.useState('');
   const [selectedProduct, setSelectedProduct] = React.useState(null);
   const [showProductModal, setShowProductModal] = React.useState(false);
+  const [pagination, setPagination] = React.useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalProducts: 0
+  });
 
   // Fetch products on mount and when filter changes
   React.useEffect(() => {
@@ -23,8 +28,17 @@ const ProductManagement = () => {
         const filters = filterStatus === 'all' ? {} : { status: filterStatus };
         const data = await productService.getProducts(filters);
         setProducts(data);
+        setPagination(prev => ({
+          ...prev,
+          totalProducts: data.length
+        }));
       } catch (error) {
         toast.error(error.message);
+        setProducts([]);
+        setPagination(prev => ({
+          ...prev,
+          totalProducts: 0
+        }));
       } finally {
         setLoading(false);
       }
@@ -115,18 +129,25 @@ const ProductManagement = () => {
       };
 
       const updated = await productService.updateProduct(selectedProduct._id, allowedUpdates);
-      
+
       // Update local state
-      setProducts(products.map(p => 
+      setProducts(products.map(p =>
         p._id === updated._id ? updated : p
       ));
-      
+
       setShowProductModal(false);
       setSelectedProduct(null);
       toast.success('Product updated successfully');
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: newPage
+    }));
   };
 
   return (
@@ -153,11 +174,15 @@ const ProductManagement = () => {
 
           <ProductList
             products={products}
+            loading={loading}
             onProductClick={handleProductClick}
             onApprove={handleApprove}
             onReject={handleReject}
             onEscalate={handleEscalate}
             onDelete={handleDelete}
+            pageSize={pagination.pageSize}
+            currentPage={pagination.currentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>
@@ -202,11 +227,10 @@ const ProductManagement = () => {
             <button
               onClick={() => handleRejectConfirm(rejectionReason)}
               disabled={rejectionReason.length < 10}
-              className={`px-4 py-2 text-white rounded-md ${
-                rejectionReason.length < 10 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`px-4 py-2 text-white rounded-md ${rejectionReason.length < 10
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-700'
-              }`}
+                }`}
             >
               Confirm Rejection
             </button>

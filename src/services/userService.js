@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '../config';
 
 export const userService = {
-  getAllUsers: async() => {
+  getAllUsers: async () => {
     const response = await fetch(`${API_BASE_URL}/api/users`, {
       credentials: 'include',
       headers: {
@@ -19,16 +19,18 @@ export const userService = {
       body: JSON.stringify(userData),
     });
     if (!response.ok) throw new Error('Failed to update user');
+    return response.json();
   },
-  approveUser: async (id)=> {
+  approveUser: async (id) => {
     const response = await fetch(`${API_BASE_URL}/api/users/${id}/approve`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
     if (!response.ok) throw new Error('Failed to approve user');
+    return response.json();
   },
-  banUser: async (id)=> {
+  banUser: async (id) => {
     const response = await fetch(`${API_BASE_URL}/api/users/${id}/ban`, {
       method: 'POST',
       credentials: 'include',

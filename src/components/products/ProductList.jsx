@@ -2,7 +2,39 @@ import React from 'react';
 import Table from '../common/Table';
 import { format } from 'date-fns';
 
-const ProductList = ({ products, loading, onProductClick, onApprove, onReject, onEscalate, onDelete }) => {
+const ProductList = ({ 
+  products, 
+  loading, 
+  onProductClick, 
+  onApprove, 
+  onReject, 
+  onEscalate, 
+  onDelete,
+  pageSize = 10,
+  currentPage,
+  onPageChange 
+}) => {
+  // Add pagination logic
+  const paginatedProducts = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return products.slice(startIndex, endIndex);
+  }, [products, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(products.length / pageSize);
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
+  };
+
   const columns = React.useMemo(
     () => [
       {
@@ -44,9 +76,9 @@ const ProductList = ({ products, loading, onProductClick, onApprove, onReject, o
           <span
             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
               ${value === 'approved' ? 'bg-green-100 text-green-800' :
-              value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              value === 'flagged' ? 'bg-orange-100 text-orange-800' :
-              'bg-red-100 text-red-800'}`}
+                value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  value === 'flagged' ? 'bg-orange-100 text-orange-800' :
+                    'bg-red-100 text-red-800'}`}
           >
             {value}
           </span>
@@ -149,7 +181,80 @@ const ProductList = ({ products, loading, onProductClick, onApprove, onReject, o
     );
   }
 
-  return <Table columns={columns} data={products} />;
+  return (
+    <div className="space-y-4">
+      <Table columns={columns} data={paginatedProducts} />
+      
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="flex justify-between sm:hidden">
+          {/* Mobile pagination controls */}
+          <button
+            onClick={handlePrevious}
+            disabled={currentPage === 1}
+            className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentPage >= totalPages}
+            className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+        
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing{' '}
+              <span className="font-medium">
+                {Math.min((currentPage - 1) * pageSize + 1, products.length)}
+              </span>{' '}
+              to{' '}
+              <span className="font-medium">
+                {Math.min(currentPage * pageSize, products.length)}
+              </span>{' '}
+              of{' '}
+              <span className="font-medium">{products.length}</span>{' '}
+              results
+            </p>
+          </div>
+          
+          <div className="flex justify-center items-center space-x-2">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 text-sm font-medium rounded-md
+                ${currentPage === 1
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+            >
+              Previous
+            </button>
+            
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <button
+              onClick={handleNext}
+              disabled={currentPage >= totalPages}
+              className={`px-4 py-2 text-sm font-medium rounded-md
+                ${currentPage === totalPages
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ProductList;

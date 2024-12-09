@@ -17,6 +17,11 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = React.useState(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [pagination, setPagination] = React.useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalUsers: 0
+  });
 
   const fetchPendingVerifications = async () => {
     try {
@@ -36,41 +41,67 @@ const UserManagement = () => {
   const fetchUsersByType = async () => {
     setIsLoading(true);
     try {
-      let fetchedUsers;
+      let response;
+      
       switch (activeTab) {
         case 'sellers':
-          fetchedUsers = await userService.getSellers();
+          response = await userService.getSellers();
           break;
         case 'buyers':
-          fetchedUsers = await userService.getBuyers();
+          response = await userService.getBuyers();
           break;
         default:
-          fetchedUsers = await userService.getAllUsers();
+          response = await userService.getAllUsers();
       }
-      setUsers(fetchedUsers);
+      
+      // Store all users in state
+      const allUsers = Array.isArray(response) ? response : response.users || [];
+      setUsers(allUsers);
+      setPagination(prev => ({
+        ...prev,
+        totalUsers: allUsers.length
+      }));
     } catch (error) {
-      toast.error('Failed to fetch users');
+      toast.error(`Failed to fetch users: ${error.message}`);
+      setUsers([]);
+      setPagination(prev => ({
+        ...prev,
+        totalUsers: 0
+      }));
     } finally {
       setIsLoading(false);
     }
   };
 
   React.useEffect(() => {
-    fetchUsersByType();
-    fetchPendingVerifications();
-  }, [activeTab]);
+    let mounted = true;
+
+    const fetchData = async () => {
+      if (!mounted) return;
+      await fetchUsersByType();
+      await fetchPendingVerifications();
+    };
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, pagination.currentPage, pagination.pageSize]);
 
   const handleUpdateUser = async (userData) => {
     if (!selectedUser) return;
 
     try {
-      await userService.updateUser(selectedUser.id, userData);
-      await fetchUsersByType();
+      const updatedUser = await userService.updateUser(selectedUser.id, userData);
+      setUsers(users.map(user => 
+        user.id === selectedUser.id ? updatedUser : user
+      ));
       setSelectedUser(null);
       setIsModalOpen(false);
       toast.success('User updated successfully');
     } catch (error) {
-      toast.error('Failed to update user');
+      toast.error(`Failed to update user: ${error.message}`);
     }
   };
 
@@ -87,7 +118,7 @@ const UserManagement = () => {
       
       await fetchUsersByType();
       await fetchPendingVerifications();
-      toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+      toast.success(`User ${approved ? 'approved' : 'banned'} successfully`);
     } catch (error) {
       toast.error('Failed to verify user');
     }
@@ -116,6 +147,13 @@ const UserManagement = () => {
       toast.error('Failed to send password reset email');
     }
   }, [users]);
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: newPage
+    }));
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -164,6 +202,11 @@ const UserManagement = () => {
               onResetPassword={handleResetPassword}
             />
           )}
+          pageSize={pagination.pageSize}
+          currentPage={pagination.currentPage}
+          totalUsers={pagination.totalUsers}
+          onPageChange={handlePageChange}
+          isLoading={isLoading}
         />
       )}
 

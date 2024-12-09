@@ -11,8 +11,6 @@ const getOrders = async (req, res) => {
       status,
       vendor,
       dateRange,
-      page = 1,
-      limit = 10,
       customerName,
       minAmount,
       maxAmount
@@ -39,23 +37,12 @@ const getOrders = async (req, res) => {
     if (minAmount) query.total = { $gte: parseFloat(minAmount) };
     if (maxAmount) query.total = { ...query.total, $lte: parseFloat(maxAmount) };
 
-    const total = await Order.countDocuments(query);
     const orders = await Order.find(query)
       .populate('customer', 'name email')
       .populate('vendor', 'name email')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .sort({ createdAt: -1 });
 
-    res.json({
-      orders,
-      pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        page: parseInt(page),
-        limit: parseInt(limit)
-      }
-    });
+    res.json({ orders });
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ message: 'Error fetching orders' });

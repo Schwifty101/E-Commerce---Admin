@@ -173,7 +173,7 @@ const verifySeller = async (req, res) => {
     const seller = await User.findByIdAndUpdate(
       req.params.id,
       {
-        verificationStatus: approved ? 'approved' : 'rejected',
+        verificationStatus: approved ? 'active' : 'banned',
         'businessDetails.verified': approved
       },
       { new: true }

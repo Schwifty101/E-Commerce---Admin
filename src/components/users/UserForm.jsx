@@ -101,7 +101,7 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
           <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
+          <option value="active">active</option>
           <option value="banned">Banned</option>
         </select>
       </div>
