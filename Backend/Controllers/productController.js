@@ -1,4 +1,4 @@
-const {Product} = require('../models/Product');
+const {Product} = require('../Models/Product');
 const { productActionSchema } = require('../utils/validation');
 const { sendNotification } = require('../utils/notification');
 const { rejectSchema, updateProductSchema } = require('../utils/validation');

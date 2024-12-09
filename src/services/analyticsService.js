@@ -44,10 +44,10 @@ export const analyticsService = {
                 },
                 dailyData: data.dailyData.map(day => ({
                     date: new Date(day.date),
-                    totalRevenue: day.revenue,
-                    orderCount: day.orders.total,
-                    growth: day.growth,
-                    hourlyRevenue: day.hourlyRevenue
+                    totalRevenue: day.revenue || 0,
+                    orderCount: day.orders.total || 0,
+                    growth: day.growth || 0,
+                    hourlyRevenue: day.hourlyRevenue || []
                 }))
             };
         } catch (error) {

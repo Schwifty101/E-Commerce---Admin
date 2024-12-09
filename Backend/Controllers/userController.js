@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../Models/User');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { createExcelWorkbook } = require('../utils/excel');
 const { createUserSchema } = require('../utils/validation');

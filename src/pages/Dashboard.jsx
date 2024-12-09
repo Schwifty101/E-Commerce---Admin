@@ -1,66 +1,50 @@
 import { DollarSign, ShoppingBag, Users, Package } from 'lucide-react';
 import StatsCard from '../components/dashboard/StatsCard';
 import RecentOrders from '../components/dashboard/RecentOrders';
-
-const mockOrders = [
-  {
-    id: '1',
-    customerName: 'Soban',
-    date: '2024-03-14',
-    status: 'pending',
-    total: 120.75,
-    items: [
-      { productId: '101', name: 'Laptop', quantity: 1, price: 120.75 }
-    ],
-    shippingAddress: '123 Main Street, Islamabad',
-    paymentStatus: 'pending',
-  },
-  {
-    id: '2',
-    customerName: 'Jane Smith',
-    date: '2024-03-14',
-    status: 'processing',
-    total: 234.50,
-    items: [
-      { productId: '102', name: 'Phone', quantity: 1, price: 234.50 }
-    ],
-    shippingAddress: '456 Elm Street, Karachi',
-    paymentStatus: 'paid',
-  },
-  {
-    id: '3',
-    customerName: 'Mike Johnson',
-    date: '2024-03-14',
-    status: 'shipped',
-    total: 89.99,
-    items: [
-      { productId: '103', name: 'Headphones', quantity: 1, price: 89.99 }
-    ],
-    shippingAddress: '789 Pine Street, Lahore',
-    paymentStatus: 'paid',
-  },
-];
+import { useEffect, useState } from 'react';
+import { analyticsService } from '../services/analyticsService';
 
 const Dashboard = () => {
+  const [revenueData, setRevenueData] = useState({ totalRevenue: 0, growth: 0 });
+
+  console.log(revenueData);
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      try {
+        const data = await analyticsService.getRevenueAnalytics({ period: '30days' });
+        console.log('Growth:', data.summary.growth);
+        setRevenueData(data.summary);
+      } catch (error) {
+        console.error('Failed to fetch revenue data:', error);
+      }
+    };
+
+    fetchRevenueData();
+  }, []);
+
+  const formatNumber = (number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatsCard
           title="Total Sales"
-          value="$12,345"
+          value={formatNumber(revenueData.totalRevenue)}
           icon={DollarSign}
-          trend={12}
+          trend={typeof revenueData.growth === 'number' ? revenueData.growth : 0}
           trendLabel="vs last month"
         />
         <StatsCard
           title="Total Orders"
-          value="156"
+          value={revenueData.totalOrders}
           icon={ShoppingBag}
-          trend={8}
+          trend={3}
           trendLabel="vs last month"
         />
         <StatsCard
@@ -80,7 +64,7 @@ const Dashboard = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-        <RecentOrders orders={mockOrders} />
+        {/* <RecentOrders orders={} /> */}
       </div>
     </div>
   );
