@@ -1,6 +1,7 @@
 import React from 'react';
 import Table from '../common/Table';
 import { format } from 'date-fns';
+import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'; // Import icons
 
 const ProductList = ({ 
   products, 
@@ -14,7 +15,6 @@ const ProductList = ({
   currentPage,
   onPageChange 
 }) => {
-  // Add pagination logic
   const paginatedProducts = React.useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -23,96 +23,105 @@ const ProductList = ({
 
   const totalPages = Math.ceil(products.length / pageSize);
 
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
   const columns = React.useMemo(
     () => [
       {
         Header: 'Product',
         accessor: 'name',
         Cell: ({ row }) => (
-          <div className="flex items-center">
-            <img
-              src={row.original.image}
-              alt={row.original.name}
-              className="h-10 w-10 rounded-md object-cover mr-3"
-            />
-            <span>{row.original.name}</span>
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0 h-12 w-12">
+              <img
+                src={row.original.image}
+                alt={row.original.name}
+                className="h-12 w-12 rounded-lg object-cover border border-gray-200"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/placeholder-product.png';
+                }}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-gray-900 truncate">
+                {row.original.name}
+              </div>
+              <div className="text-sm text-gray-500 truncate">
+                SKU: {row.original.sku || 'N/A'}
+              </div>
+            </div>
           </div>
         ),
       },
       {
         Header: 'Price',
         accessor: 'price',
-        Cell: ({ value }) => `$${value.toFixed(2)}`,
+        Cell: ({ value }) => (
+          <span className="text-sm font-medium text-gray-900">
+            ${value.toFixed(2)}
+          </span>
+        ),
       },
       {
         Header: 'Stock',
         accessor: 'stock',
         Cell: ({ value }) => (
-          <span className={value < 10 ? 'text-red-600 font-medium' : ''}>
+          <span className={`text-sm font-medium
+            ${value < 10 ? 'text-red-600' : 'text-gray-900'}`}
+          >
             {value} units
           </span>
         ),
       },
       {
-        Header: 'Category',
-        accessor: 'category',
-      },
-      {
         Header: 'Status',
         accessor: 'status',
-        Cell: ({ value }) => (
-          <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-              ${value === 'approved' ? 'bg-green-100 text-green-800' :
-                value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  value === 'flagged' ? 'bg-orange-100 text-orange-800' :
-                    'bg-red-100 text-red-800'}`}
-          >
-            {value}
-          </span>
-        ),
-      },
-      {
-        Header: 'Seller',
-        accessor: 'seller',
-        Cell: ({ value }) => value?.name || value?.email || 'Unknown Seller',
-      },
-      {
-        Header: 'Created At',
-        accessor: 'createdAt',
-        sortType: (rowA, rowB) => {
-          const a = new Date(rowA.values.createdAt).getTime();
-          const b = new Date(rowB.values.createdAt).getTime();
-          return a > b ? 1 : -1;
+        Cell: ({ value }) => {
+          const statusStyles = {
+            approved: 'bg-green-50 text-green-700 border-green-200',
+            pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+            flagged: 'bg-orange-50 text-orange-700 border-orange-200',
+            rejected: 'bg-red-50 text-red-700 border-red-200'
+          };
+
+          return (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+              border ${statusStyles[value] || 'bg-gray-50 text-gray-700 border-gray-200'}`}
+            >
+              {value.charAt(0).toUpperCase() + value.slice(1)}
+            </span>
+          );
         },
-        Cell: ({ value }) => format(new Date(value), 'MMM dd, yyyy'),
+      },
+      {
+        Header: 'Reports',
+        accessor: 'reports',
+        Cell: ({ value }) => value?.length > 0 && (
+          <div className="flex items-center space-x-1">
+            <AlertTriangle className="w-4 h-4 text-orange-500" />
+            <span className="text-sm font-medium text-orange-700">
+              {value.length}
+            </span>
+          </div>
+        ),
       },
       {
         Header: 'Actions',
         id: 'actions',
         Cell: ({ row }) => (
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onProductClick(row.original);
               }}
-              className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium
+                rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500/20
+                transition-colors duration-200"
             >
               View Details
             </button>
+            {/* Render action buttons based on status */}
             {row.original.status === 'pending' && (
               <>
                 <button
@@ -120,7 +129,10 @@ const ProductList = ({
                     e.stopPropagation();
                     onApprove(row.original);
                   }}
-                  className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                  className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium
+                    rounded-lg bg-green-50 text-green-700 hover:bg-green-100
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500/20
+                    transition-colors duration-200"
                 >
                   Approve
                 </button>
@@ -129,44 +141,17 @@ const ProductList = ({
                     e.stopPropagation();
                     onReject(row.original);
                   }}
-                  className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                  className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium
+                    rounded-lg bg-red-50 text-red-700 hover:bg-red-100
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500/20
+                    transition-colors duration-200"
                 >
                   Reject
                 </button>
               </>
             )}
-            {row.original.status === 'flagged' && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEscalate(row.original);
-                  }}
-                  className="px-3 py-1 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700"
-                >
-                  Escalate
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(row.original);
-                  }}
-                  className="px-3 py-1 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700"
-                >
-                  Delete
-                </button>
-              </>
-            )}
+            {/* Additional action buttons for other statuses */}
           </div>
-        ),
-      },
-      {
-        Header: 'Reports',
-        accessor: 'reports',
-        Cell: ({ value }) => value?.length > 0 && (
-          <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-            {value.length} reports
-          </span>
         ),
       },
     ],
@@ -183,55 +168,64 @@ const ProductList = ({
 
   return (
     <div className="space-y-4">
-      <Table columns={columns} data={paginatedProducts} />
-      
-      {/* Pagination Controls */}
-      <div className="flex justify-between items-center px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-        <div className="flex justify-between sm:hidden">
-          {/* Mobile pagination controls */}
+      <div className="overflow-x-auto">
+        <Table 
+          columns={columns} 
+          data={paginatedProducts}
+          className="min-w-full"
+        />
+      </div>
+
+      {/* Pagination */}
+      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div className="flex-1 flex justify-between sm:hidden">
           <button
-            onClick={handlePrevious}
+            onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md
+              ${currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              }`}
           >
             Previous
           </button>
           <button
-            onClick={handleNext}
+            onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md
+              ${currentPage >= totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              }`}
           >
             Next
           </button>
         </div>
-        
-        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
               Showing{' '}
-              <span className="font-medium">
-                {Math.min((currentPage - 1) * pageSize + 1, products.length)}
-              </span>{' '}
-              to{' '}
-              <span className="font-medium">
-                {Math.min(currentPage * pageSize, products.length)}
-              </span>{' '}
-              of{' '}
-              <span className="font-medium">{products.length}</span>{' '}
-              results
+              <span className="font-medium">{Math.min((currentPage - 1) * pageSize + 1, products.length)}</span>
+              {' '}-{' '}
+              <span className="font-medium">{Math.min(currentPage * pageSize, products.length)}</span>
+              {' '}of{' '}
+              <span className="font-medium">{products.length}</span> products
             </p>
           </div>
-          
-          <div className="flex justify-center items-center space-x-2">
+
+          <div className="flex items-center space-x-2">
             <button
-              onClick={handlePrevious}
+              onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-4 py-2 text-sm font-medium rounded-md
+              className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md
                 ${currentPage === 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                 }`}
             >
+              <ChevronLeft className="w-4 h-4 mr-1" />
               Previous
             </button>
             
@@ -240,15 +234,16 @@ const ProductList = ({
             </span>
             
             <button
-              onClick={handleNext}
+              onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
-              className={`px-4 py-2 text-sm font-medium rounded-md
-                ${currentPage === totalPages
+              className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md
+                ${currentPage >= totalPages
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                 }`}
             >
               Next
+              <ChevronRight className="w-4 h-4 ml-1" />
             </button>
           </div>
         </div>

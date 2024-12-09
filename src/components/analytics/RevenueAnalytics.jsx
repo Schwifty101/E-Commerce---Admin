@@ -13,6 +13,16 @@ import {
 } from 'chart.js';
 import { analyticsService } from '../../services/analyticsService';
 import { useState, useEffect } from 'react';
+import { 
+    TrendingUp, 
+    Loader2, 
+    AlertCircle, 
+    Download,
+    DollarSign,
+    ShoppingCart,
+    CreditCard,
+    PercentCircle
+} from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -170,7 +180,10 @@ const RevenueAnalytics = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+                <div className="flex flex-col items-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    <p className="text-sm text-gray-500 font-medium">Loading analytics...</p>
+                </div>
             </div>
         );
     }
@@ -178,11 +191,13 @@ const RevenueAnalytics = () => {
     if (error) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="text-center">
+                <div className="text-center space-y-3">
+                    <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
                     <p className="text-red-600 mb-2">Error loading data</p>
                     <button
                         onClick={fetchRevenueData}
-                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium 
+                                 hover:bg-red-100 transition-colors duration-200 inline-flex items-center space-x-2"
                     >
                         Try Again
                     </button>
@@ -195,20 +210,26 @@ const RevenueAnalytics = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Revenue Analytics</h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        {period === '24hours' ? 'Last 24 hours' :
-                            period === '7days' ? 'Last 7 days' :
-                                period === '30days' ? 'Last 30 days' :
-                                    period === '90days' ? 'Last 90 days' :
-                                        'Last 12 months'} performance analysis
-                    </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Revenue Analytics</h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                            {period === '24hours' ? 'Last 24 hours' :
+                             period === '7days' ? 'Last 7 days' :
+                             period === '30days' ? 'Last 30 days' :
+                             period === '90days' ? 'Last 90 days' :
+                             'Last 12 months'} performance analysis
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center space-x-4">
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <select
-                        className="px-3 py-2 bg-white border rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none"
+                        className="px-3 py-2 bg-white border rounded-lg text-sm text-gray-600 
+                                 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none
+                                 hover:border-blue-300 transition-colors duration-200"
                         value={period}
                         onChange={(e) => setPeriod(e.target.value)}
                     >
@@ -220,60 +241,83 @@ const RevenueAnalytics = () => {
                     </select>
                     <button
                         onClick={handleExport}
-                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium 
+                                 hover:bg-blue-100 transition-all duration-200 inline-flex items-center 
+                                 justify-center space-x-2 active:scale-95"
                     >
-                        Export Data
+                        <Download className="w-4 h-4" />
+                        <span>Export Data</span>
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border p-6">
-                <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {[
                         { 
-                            label: 'Total Revenue', 
+                            label: 'Total Revenue',
+                            icon: DollarSign,
                             value: `$${summary?.totalRevenue?.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             }) || '0.00'}`,
-                            change: `${summary?.growth || 0}%`
+                            change: `${summary?.growth || 0}%`,
+                            color: 'blue'
                         },
                         { 
-                            label: 'Average Order Value', 
+                            label: 'Average Order Value',
+                            icon: CreditCard,
                             value: `$${summary?.averageRevenue?.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             }) || '0.00'}`,
-                            change: `${summary?.averageGrowth || 0}%`
+                            change: `${summary?.averageGrowth || 0}%`,
+                            color: 'green'
                         },
                         {
                             label: 'Order Count',
+                            icon: ShoppingCart,
                             value: summary?.totalOrders?.toLocaleString() || 0,
-                            change: `${summary?.orderGrowth || 0}%`
+                            change: `${summary?.orderGrowth || 0}%`,
+                            color: 'yellow'
                         },
                         {
                             label: 'Conversion Rate',
+                            icon: PercentCircle,
                             value: `${summary?.conversionMetrics?.cartToOrder || 0}%`,
-                            change: `${summary?.conversionGrowth || 0}%`
+                            change: `${summary?.conversionGrowth || 0}%`,
+                            color: 'purple'
                         },
                     ].map((stat, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">{stat.label}</p>
-                            <p className="text-xl font-semibold text-gray-900 mt-1">{stat.value}</p>
-                            <p className={`text-sm mt-1 ${parseFloat(stat.change) >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                {parseFloat(stat.change) >= 0 ? '+' : ''}{stat.change}%
+                        <div key={index} 
+                             className={`p-4 rounded-lg border bg-${stat.color}-50 border-${stat.color}-100
+                                       transition-all duration-200 hover:shadow-sm`}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <stat.icon className={`w-5 h-5 text-${stat.color}-600`} />
+                                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                            <p className={`text-sm mt-1 flex items-center space-x-1
+                                         ${parseFloat(stat.change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <TrendingUp className={`w-4 h-4 ${
+                                    parseFloat(stat.change) >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`} />
+                                <span>{parseFloat(stat.change) >= 0 ? '+' : ''}{stat.change}</span>
                             </p>
                         </div>
                     ))}
                 </div>
 
-                <div style={{ height: '400px' }}>
+                <div className="h-[400px] sm:h-[450px] lg:h-[500px]">
                     {analyticsData?.dailyData?.length > 0 ? (
                         <Line data={chartData} options={options} />
                     ) : (
                         <div className="flex items-center justify-center h-full">
-                            <p className="text-gray-500">No data available for the selected period</p>
+                            <div className="text-center">
+                                <AlertCircle className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-500">No data available for the selected period</p>
+                            </div>
                         </div>
                     )}
                 </div>

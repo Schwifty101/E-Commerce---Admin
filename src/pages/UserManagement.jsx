@@ -6,6 +6,7 @@ import Modal from '../components/common/Modal';
 import toast from 'react-hot-toast';
 import { userService } from '../services/userService';
 import SellerVerification from '../components/users/SellerVerification';
+import { Users } from 'lucide-react';
 
 const UserManagement = () => {
   const [activeTab, setActiveTab] = React.useState('all');
@@ -156,85 +157,108 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">User Management</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Users className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">User Management</h1>
+              <p className="text-sm text-gray-600 mt-0.5">Manage and monitor user accounts</p>
+            </div>
+          </div>
+        </div>
 
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {['all', 'sellers', 'buyers'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-                ${activeTab === tab
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-              `}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {tab !== 'all' && pendingVerifications[tab] > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                  {pendingVerifications[tab]}
-                </span>
+        <div className="border-b border-gray-200 -mx-4 px-4 md:mx-0 md:px-0">
+          <nav className="flex space-x-2 md:space-x-4 overflow-x-auto hide-scrollbar">
+            {['all', 'sellers', 'buyers'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`
+                  whitespace-nowrap py-3 px-3 border-b-2 text-sm font-medium
+                  transition-colors duration-200 ease-in-out min-w-[80px]
+                  flex items-center justify-center
+                  ${activeTab === tab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                <div className="flex items-center justify-center gap-2 w-full">
+                  <span className="capitalize">{tab}</span>
+                  {tab !== 'all' && pendingVerifications[tab] > 0 && (
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs 
+                      rounded-full bg-yellow-100 text-yellow-800 font-medium min-w-[20px]">
+                      {pendingVerifications[tab]}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-sm text-gray-600">Loading users...</p>
+              </div>
+            </div>
+          ) : (
+            <UserList 
+              users={users} 
+              onUserClick={(user) => {
+                setSelectedUser(user);
+                setIsModalOpen(true);
+              }}
+              actions={(user) => (
+                <UserActions
+                  user={user}
+                  onStatusChange={(userId, newStatus) => handleVerification(userId, newStatus === 'approved')}
+                  onDelete={handleDelete}
+                  onResetPassword={handleResetPassword}
+                />
               )}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-4">Loading...</div>
-      ) : (
-        <UserList 
-          users={users} 
-          onUserClick={(user) => {
-            setSelectedUser(user);
-            setIsModalOpen(true);
-          }}
-          actions={(user) => (
-            <UserActions
-              user={user}
-              onStatusChange={(userId, newStatus) => handleVerification(userId, newStatus === 'approved')}
-              onDelete={handleDelete}
-              onResetPassword={handleResetPassword}
+              pageSize={pagination.pageSize}
+              currentPage={pagination.currentPage}
+              totalUsers={pagination.totalUsers}
+              onPageChange={handlePageChange}
+              isLoading={isLoading}
             />
           )}
-          pageSize={pagination.pageSize}
-          currentPage={pagination.currentPage}
-          totalUsers={pagination.totalUsers}
-          onPageChange={handlePageChange}
-          isLoading={isLoading}
-        />
-      )}
+        </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedUser(null);
-        }}
-        title={selectedUser ? 'Edit User' : 'Create User'}
-      >
-        {selectedUser?.verificationStatus === 'pending' ? (
-          <SellerVerification
-            seller={selectedUser}
-            onApprove={(id) => handleVerification(id, true)}
-            onReject={(id) => handleVerification(id, false)}
-          />
-        ) : (
-          <UserForm
-            user={selectedUser || undefined}
-            onSubmit={handleUpdateUser}
-            onCancel={() => {
-              setIsModalOpen(false);
-              setSelectedUser(null);
-            }}
-          />
-        )}
-      </Modal>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedUser(null);
+          }}
+          title={selectedUser ? 'Edit User' : 'Create User'}
+          size="lg"
+        >
+          {selectedUser?.verificationStatus === 'pending' ? (
+            <SellerVerification
+              seller={selectedUser}
+              onApprove={(id) => handleVerification(id, true)}
+              onReject={(id) => handleVerification(id, false)}
+            />
+          ) : (
+            <UserForm
+              user={selectedUser || undefined}
+              onSubmit={handleUpdateUser}
+              onCancel={() => {
+                setIsModalOpen(false);
+                setSelectedUser(null);
+              }}
+            />
+          )}
+        </Modal>
+      </div>
     </div>
   );
 };

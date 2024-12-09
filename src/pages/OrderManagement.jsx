@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tab, Tabs, Button } from '@mui/material';
+import { Box, Tab, Tabs } from '@mui/material';
 import { orderService } from '../services/orderService';
 import OrderList from '../components/orders/OrderList';
 import OrderDetails from '../components/orders/OrderDetails';
 import OrderStatusModal from '../components/orders/OrderStatusModal';
 import ReturnRefundManagement from '../components/orders/ReturnRefundManagement';
 import toast from 'react-hot-toast';
+import { Package, FileDown, ArrowLeft } from 'lucide-react';
 
 const OrderManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -15,13 +16,11 @@ const OrderManagement = () => {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Simplified fetchOrders without pagination
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const response = await orderService.getOrders();
       if (response.orders) {
-        console.log(response.orders);
         setOrders(response.orders);
       }
     } catch (error) {
@@ -31,7 +30,6 @@ const OrderManagement = () => {
     }
   };
 
-  // Fetch return requests
   const fetchReturnRequests = async () => {
     try {
       const response = await orderService.getReturnRequests();
@@ -46,13 +44,11 @@ const OrderManagement = () => {
     fetchReturnRequests();
   }, []);
 
-  // Handle tab change
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
     setSelectedOrder(null);
   };
 
-  // Handle order status update
   const handleStatusUpdate = async (orderId, statusData) => {
     try {
       await orderService.updateOrderStatus(orderId, statusData);
@@ -64,13 +60,12 @@ const OrderManagement = () => {
     }
   };
 
-  // Handle return request processing
   const handleReturnRequest = async (requestId, actionData) => {
     try {
       const result = await orderService.processReturnRequest(requestId, actionData);
       if (result.success) {
         toast.success('Return request processed successfully');
-        fetchReturnRequests(); // Refresh the list
+        fetchReturnRequests();
       } else {
         toast.error(result.message || 'Failed to process return request');
       }
@@ -80,7 +75,6 @@ const OrderManagement = () => {
     }
   };
 
-  // Handle order export
   const handleExport = async () => {
     try {
       const blob = await orderService.exportOrders();
@@ -91,67 +85,94 @@ const OrderManagement = () => {
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      toast.success('Export started');
     } catch (error) {
       toast.error('Failed to export orders');
     }
   };
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-        <button
-          onClick={handleExport}
-          className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg 
-                    hover:bg-blue-700 transition-colors duration-200 
-                    focus:ring-2 focus:ring-blue-200"
-        >
-          Export Analytics Data
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Package className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Order Management</h1>
+              <p className="text-sm text-gray-600 mt-0.5">Manage and process customer orders</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium 
+              text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+              transition-colors w-full sm:w-auto"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Export Analytics
+          </button>
+        </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
-          <Tabs value={activeTab} onChange={handleTabChange}>
-            <Tab label="Orders" />
-            <Tab label="Returns & Refunds" />
-          </Tabs>
-        </Box>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              className="px-4 md:px-6"
+            >
+              <Tab 
+                label="Orders" 
+                className="text-sm font-medium"
+              />
+              <Tab 
+                label="Returns & Refunds" 
+                className="text-sm font-medium"
+              />
+            </Tabs>
+          </Box>
 
-        <div className="p-6">
-          {activeTab === 0 && (
-            <Box>
-              {selectedOrder ? (
-                <Box className="space-y-6">
-                  <Button
-                    variant="outlined"
-                    onClick={() => setSelectedOrder(null)}
-                    className="mb-4"
-                  >
-                    Back to Orders
-                  </Button>
-                  <OrderDetails
-                    order={selectedOrder}
-                    onBack={() => setSelectedOrder(null)}
-                    onStatusUpdate={() => setIsStatusModalOpen(true)}
+          <div className="p-4 md:p-6">
+            {activeTab === 0 && (
+              <div className="space-y-4">
+                {selectedOrder ? (
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setSelectedOrder(null)}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium 
+                        text-gray-700 bg-white border border-gray-300 rounded-lg 
+                        shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 
+                        focus:ring-blue-500/20 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Orders
+                    </button>
+                    <OrderDetails
+                      order={selectedOrder}
+                      onBack={() => setSelectedOrder(null)}
+                      onStatusUpdate={() => setIsStatusModalOpen(true)}
+                    />
+                  </div>
+                ) : (
+                  <OrderList
+                    orders={orders}
+                    onOrderClick={setSelectedOrder}
+                    loading={loading}
                   />
-                </Box>
-              ) : (
-                <OrderList
-                  orders={orders}
-                  onOrderClick={setSelectedOrder}
-                  loading={loading}
-                />
-              )}
-            </Box>
-          )}
+                )}
+              </div>
+            )}
 
-          {activeTab === 1 && (
-            <ReturnRefundManagement
-              requests={returnRequests}
-              onUpdateRequest={handleReturnRequest}
-            />
-          )}
+            {activeTab === 1 && (
+              <ReturnRefundManagement
+                requests={returnRequests}
+                onUpdateRequest={handleReturnRequest}
+              />
+            )}
+          </div>
         </div>
 
         <OrderStatusModal

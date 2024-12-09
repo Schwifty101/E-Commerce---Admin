@@ -41,18 +41,20 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header Section */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 md:gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-            <p className="text-gray-600 mt-1">Track your business performance and growth</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="text-sm md:text-base text-gray-600 mt-0.5">
+              Track your business performance and growth
+            </p>
           </div>
         </div>
 
         {/* Stats Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <StatsCard
             title="Total Sales"
             value={formatNumber(revenueData.totalRevenue)}
@@ -84,7 +86,7 @@ const Dashboard = () => {
         </div>
 
         {/* Top Products Section */}
-        <div className="grid grid-cols-1 gap-6">
+        <div className="mt-4">
           <TopProducts />
         </div>
       </div>

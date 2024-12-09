@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Table from '../common/Table';
 import { format } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const OrderList = ({ orders, onOrderClick, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,13 +48,24 @@ const OrderList = ({ orders, onOrderClick, loading }) => {
       {
         Header: 'Order ID',
         accessor: 'orderNumber',
-        Cell: ({ value }) => `#${value || 'N/A'}`,
+        Cell: ({ value }) => (
+          <span className="font-medium text-gray-900">#{value || 'N/A'}</span>
+        ),
       },
       {
         Header: 'Customer',
         accessor: row => row.customer?.name,
         id: 'customerName',
-        Cell: ({ value }) => value || 'N/A',
+        Cell: ({ row, value }) => (
+          <div className="flex flex-col">
+            <span className="text-gray-900">{value || 'N/A'}</span>
+            {value && (
+              <span className="text-xs text-gray-500">
+                {row.original.customer?.email || 'No email'}
+              </span>
+            )}
+          </div>
+        ),
       },
       {
         Header: 'Date',
@@ -62,10 +74,12 @@ const OrderList = ({ orders, onOrderClick, loading }) => {
           if (!value) return 'N/A';
           try {
             const date = new Date(value);
-            if (isNaN(date.getTime())) {
-              return 'N/A';
-            }
-            return format(date, 'MMM dd, yyyy');
+            return isNaN(date.getTime()) ? 'N/A' : (
+              <div className="flex flex-col">
+                <span className="text-gray-900">{format(date, 'MMM dd, yyyy')}</span>
+                <span className="text-xs text-gray-500">{format(date, 'HH:mm')}</span>
+              </div>
+            );
           } catch (error) {
             console.error('Date formatting error:', error);
             return 'N/A';
@@ -150,38 +164,57 @@ const OrderList = ({ orders, onOrderClick, loading }) => {
           />
 
           {/* Updated pagination section */}
-          <div className="flex justify-between items-center px-2">
-            <div className="text-sm text-gray-700">
-              Showing {startResult} to {endResult} of {totalResults} results
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-3 bg-white border-t border-gray-200">
+            {/* Results Counter - Responsive */}
+            <div className="text-sm text-gray-700 order-2 sm:order-1 text-center sm:text-left">
+              <span className="hidden sm:inline">Showing </span>
+              <span className="font-medium">{startResult}</span>
+              <span className="hidden sm:inline"> to </span>
+              <span className="sm:hidden">-</span>
+              <span className="font-medium">{endResult}</span>
+              <span className="hidden sm:inline"> of </span>
+              <span className="sm:hidden">/</span>
+              <span className="font-medium">{totalResults}</span>
+              <span className="hidden sm:inline"> results</span>
             </div>
-            
-            <div className="flex items-center space-x-2">
+
+            {/* Pagination Controls - Responsive */}
+            <div className="flex items-center gap-2 order-1 sm:order-2">
               <button
                 onClick={handlePrevious}
                 disabled={currentPage === 1}
-                className={`px-4 py-2 text-sm font-medium rounded-md
+                className={`inline-flex items-center px-2 sm:px-3 py-2 text-sm font-medium 
+                  rounded-lg transition-colors focus:outline-none focus:ring-2 
+                  focus:ring-offset-2 focus:ring-blue-500
                   ${currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                   }`}
               >
-                Previous
+                <ChevronLeft className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Previous</span>
               </button>
               
-              <span className="text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
+              <div className="flex items-center gap-1 text-sm text-gray-700">
+                <span className="hidden sm:inline">Page</span>
+                <span className="font-medium">{currentPage}</span>
+                <span>/</span>
+                <span className="font-medium">{totalPages}</span>
+              </div>
               
               <button
                 onClick={handleNext}
                 disabled={currentPage >= totalPages}
-                className={`px-4 py-2 text-sm font-medium rounded-md
-                  ${currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                className={`inline-flex items-center px-2 sm:px-3 py-2 text-sm font-medium 
+                  rounded-lg transition-colors focus:outline-none focus:ring-2 
+                  focus:ring-offset-2 focus:ring-blue-500
+                  ${currentPage >= totalPages
+                    ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                   }`}
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4 sm:ml-1" />
               </button>
             </div>
           </div>
