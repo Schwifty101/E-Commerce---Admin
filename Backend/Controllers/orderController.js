@@ -1,5 +1,5 @@
-const Order = require('../models/Order');
-const User = require('../models/User');
+const Order = require('../Models/Order');
+const User = require('../Models/User');
 const { sendNotification } = require('../utils/notification');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');

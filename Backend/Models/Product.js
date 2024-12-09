@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Analytics = mongoose.models.Analytics || require('./Analytics');
 
 // Define sub-schemas first
 const reportSchema = new mongoose.Schema({
@@ -168,6 +169,33 @@ productSchema.statics.getTopSellingProducts = async function(startDate, endDate,
         return [];
     }
 };
+
+// Add middleware to update analytics after product changes
+productSchema.post('save', async function(doc) {
+    try {
+        await Analytics.updateProductMetrics();
+        
+        // Log new product additions
+        if (doc.isNew) {
+            await Analytics.logUserActivity(
+                doc.seller,
+                'product_added',
+                null
+            );
+        }
+    } catch (error) {
+        console.error('Error updating product analytics:', error);
+    }
+});
+
+// Add middleware for bulk operations
+productSchema.post('updateMany', async function() {
+    try {
+        await Analytics.updateProductMetrics();
+    } catch (error) {
+        console.error('Error updating analytics after bulk update:', error);
+    }
+});
 
 // Export schemas for potential reuse
 module.exports = {

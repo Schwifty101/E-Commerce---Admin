@@ -1,42 +1,6 @@
 const Analytics = require('../Models/Analytics');
-const Product = require('../Models/Product').Product;
-
-// Add these helper functions at the top of the file
-const convertToCSV = (data) => {
-    if (!data || !data.length) return '';
-    
-    const headers = Object.keys(data[0]);
-    const rows = [
-        headers.join(','), // header row
-        ...data.map(row => 
-            headers.map(header => {
-                let cell = row[header];
-                // Handle numbers, dates, and strings appropriately
-                if (typeof cell === 'number') return cell;
-                if (cell instanceof Date) return cell.toISOString();
-                // Escape quotes and commas in strings
-                return `"${String(cell).replace(/"/g, '""')}"`;
-            }).join(',')
-        )
-    ];
-    
-    return rows.join('\n');
-};
-
-const convertMultipleDataToCSV = (data) => {
-    let csvContent = '';
-    
-    // Handle each data type separately
-    for (const [key, values] of Object.entries(data)) {
-        if (values && values.length) {
-            csvContent += `\n${key.toUpperCase()}\n`;
-            csvContent += convertToCSV(values);
-            csvContent += '\n\n';
-        }
-    }
-    
-    return csvContent.trim();
-};
+const { Product } = require('../Models/Product');
+const { createExcelWorkbook } = require('../utils/excel');
 
 // Create controller as an object with methods instead of a class
 const analyticsController = {
@@ -402,180 +366,63 @@ const analyticsController = {
 
     exportData: async (req, res) => {
         try {
-            const {
-                type = 'all',
-                period = '30days',
-                format = 'csv'
-            } = req.query;
-
-            const today = new Date();
-            let startDate;
-
-            // Set time period for analysis
+            const { period, groupBy } = req.query;
+            
+            // Calculate date range based on period
+            const endDate = new Date();
+            const startDate = new Date();
+            
             switch (period) {
+                case '24hours':
+                    startDate.setHours(startDate.getHours() - 24);
+                    break;
                 case '7days':
-                    startDate = new Date(today.setDate(today.getDate() - 7));
+                    startDate.setDate(startDate.getDate() - 7);
+                    break;
+                case '30days':
+                    startDate.setDate(startDate.getDate() - 30);
                     break;
                 case '90days':
-                    startDate = new Date(today.setDate(today.getDate() - 90));
+                    startDate.setDate(startDate.getDate() - 90);
                     break;
                 case '12months':
-                    startDate = new Date(today.setMonth(today.getMonth() - 12));
+                    startDate.setMonth(startDate.getMonth() - 12);
                     break;
-                default: // 30 days
-                    startDate = new Date(today.setDate(today.getDate() - 30));
+                default:
+                    return res.status(400).json({ message: 'Invalid period specified' });
             }
 
-            let data = [];
-            let filename = `analytics_export_${period}_${new Date().toISOString().split('T')[0]}`;
+            // Fetch analytics data
+            const analyticsData = await Analytics.find({
+                date: { $gte: startDate, $lte: endDate }
+            }).sort({ date: 1 });
 
-            // Build aggregation based on type
-            switch (type) {
-                case 'revenue':
-                    data = await Analytics.aggregate([
-                        {
-                            $match: {
-                                date: { $gte: startDate, $lte: new Date() }
-                            }
-                        },
-                        {
-                            $project: {
-                                date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                                totalRevenue: "$metrics.revenue.total",
-                                orderCount: "$metrics.orders.total",
-                                avgOrderValue: {
-                                    $cond: [
-                                        { $eq: ["$metrics.orders.total", 0] },
-                                        0,
-                                        { $divide: ["$metrics.revenue.total", "$metrics.orders.total"] }
-                                    ]
-                                }
-                            }
-                        },
-                        { $sort: { date: 1 } }
-                    ]);
-                    filename += '_revenue';
-                    break;
+            // Transform data for export
+            const exportData = analyticsData.map(record => ({
+                Date: record.date.toISOString().split('T')[0],
+                Revenue: record.metrics.revenue.total,
+                Orders: record.metrics.orders.total,
+                'Active Users': record.metrics.users.active,
+                'New Users': record.metrics.users.new,
+                'Total Products': record.metrics.products.total
+            }));
 
-                case 'orders':
-                    data = await Analytics.aggregate([
-                        {
-                            $match: {
-                                date: { $gte: startDate, $lte: new Date() }
-                            }
-                        },
-                        {
-                            $project: {
-                                date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                                total: "$metrics.orders.total",
-                                pending: "$metrics.orders.pending",
-                                processing: "$metrics.orders.processing",
-                                shipped: "$metrics.orders.shipped",
-                                delivered: "$metrics.orders.delivered",
-                                cancelled: "$metrics.orders.cancelled",
-                                returned: "$metrics.orders.returned"
-                            }
-                        },
-                        { $sort: { date: 1 } }
-                    ]);
-                    filename += '_orders';
-                    break;
+            // Generate Excel workbook
+            const workbook = await createExcelWorkbook(exportData);
+            
+            // Set headers for file download
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename=analytics_${period}.xlsx`);
 
-                case 'users':
-                    data = await Analytics.aggregate([
-                        {
-                            $match: {
-                                date: { $gte: startDate, $lte: new Date() }
-                            }
-                        },
-                        {
-                            $project: {
-                                date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                                activeUsers: "$metrics.users.active",
-                                newUsers: "$metrics.users.new",
-                                buyers: "$metrics.users.buyers",
-                                sellers: "$metrics.users.sellers"
-                            }
-                        },
-                        { $sort: { date: 1 } }
-                    ]);
-                    filename += '_users';
-                    break;
-
-                case 'products':
-                    data = await Analytics.aggregate([
-                        {
-                            $match: {
-                                date: { $gte: startDate, $lte: new Date() }
-                            }
-                        },
-                        {
-                            $unwind: '$topProducts'
-                        },
-                        {
-                            $lookup: {
-                                from: 'products',
-                                localField: 'topProducts.productId',
-                                foreignField: '_id',
-                                as: 'productDetails'
-                            }
-                        },
-                        {
-                            $unwind: '$productDetails'
-                        },
-                        {
-                            $project: {
-                                date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                                productName: '$productDetails.name',
-                                category: '$productDetails.category',
-                                sales: '$topProducts.sales',
-                                revenue: '$topProducts.revenue'
-                            }
-                        },
-                        { $sort: { revenue: -1 } }
-                    ]);
-                    filename += '_products';
-                    break;
-
-                default: // all
-                    // Combine all relevant data
-                    const [revenueData, orderData, userData] = await Promise.all([
-                        Analytics.aggregate([/* revenue aggregation */]),
-                        Analytics.aggregate([/* orders aggregation */]),
-                        Analytics.aggregate([/* users aggregation */])
-                    ]);
-                    data = {
-                        revenue: revenueData,
-                        orders: orderData,
-                        users: userData
-                    };
-                    break;
-            }
-
-            if (!data.length && type !== 'all') {
-                return res.status(404).json({
-                    success: false,
-                    message: 'No data available for export'
-                });
-            }
-
-            // Update the response headers
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
-            res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-
-            const csvData = type === 'all'
-                ? convertMultipleDataToCSV(data)
-                : convertToCSV(data);
-
-            return res.send(csvData);
+            // Write to response
+            await workbook.xlsx.write(res);
+            res.end();
 
         } catch (error) {
-            console.error('Error exporting analytics data:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Error exporting analytics data',
-                error: error.message
+            console.error('Export Data Error:', error);
+            res.status(500).json({ 
+                message: 'Failed to export analytics data',
+                error: error.message 
             });
         }
     }

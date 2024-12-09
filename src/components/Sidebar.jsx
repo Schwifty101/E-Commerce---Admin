@@ -18,9 +18,6 @@ const Sidebar = () => {
     { icon: Package, label: 'Products', path: '/products' },
     { icon: ShoppingBag, label: 'Orders', path: '/orders' },
     { icon: BarChart2, label: 'Analytics', path: '/analytics' },
-    { icon: Bell, label: 'Notifications', path: '/notifications' },
-    { icon: Shield, label: 'Security', path: '/security' },
-    { icon: FileText, label: 'Audit Logs', path: '/audit-logs' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 

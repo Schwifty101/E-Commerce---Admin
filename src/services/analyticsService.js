@@ -120,40 +120,30 @@ export const analyticsService = {
         }
     },
 
-    exportData: async ({
-        type = 'all',
-        period = '30days',
-        format = 'csv'
-    } = {}) => {
+    exportData: async ({ period }) => {
         try {
             const response = await axios.get(`${BASE_URL}/export`, {
                 params: {
-                    type,
-                    period,
-                    format
+                    period: period || '30days'
                 },
-                responseType: 'blob',
+                responseType: 'blob',  // Important for handling file downloads
                 withCredentials: true
             });
 
-            // Generate filename
-            const filename = `analytics_export_${period}_${type}_${new Date().toISOString().split('T')[0]}.${format}`;
-
-            // Create download link
+            // Create a download link and trigger it
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', filename);
+            link.setAttribute('download', `analytics_${period}.xlsx`);
             document.body.appendChild(link);
             link.click();
-
-            // Cleanup
+            link.remove();
             window.URL.revokeObjectURL(url);
-            document.body.removeChild(link);
 
             return true;
         } catch (error) {
             console.error('Error exporting analytics data:', error);
+            console.error('Response data:', error.response?.data);
             throw new Error(error.response?.data?.message || 'Failed to export analytics data');
         }
     }
