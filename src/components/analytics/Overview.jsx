@@ -26,7 +26,7 @@ const Overview = () => {
         datasets: [
             {
                 label: 'Metrics Overview',
-                data: [15000, 500, 1200, 100],
+                data: [1500, 500, 1200, 100],
                 backgroundColor: [
                     'rgba(76, 175, 80, 0.7)',  // Green
                     'rgba(255, 193, 7, 0.7)',  // Yellow

@@ -28,7 +28,7 @@ const UserActions = ({ user, onStatusChange, onDelete, onResetPassword }) => {
         </button>
       )}
 
-      {user.verificationStatus !== 'rejected' && (
+      {user.verificationStatus !== 'banned' && (
         <button
           onClick={handleBan}
           className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"

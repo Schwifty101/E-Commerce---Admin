@@ -8,9 +8,13 @@ const StatsCard = ({ title, value, icon: Icon, trend, trendLabel }) => {
         <div>
           <p className="text-sm text-gray-600">{title}</p>
           <h3 className="text-2xl font-bold mt-1">{value}</h3>
-          {trend && trendLabel && (
-            <p className={`text-sm mt-2 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}% {trendLabel}
+          {trend !== undefined && trendLabel && (
+            <p
+              className={`text-sm mt-2 ${
+                trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'
+              }`}
+            >
+              {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}% {trendLabel}
             </p>
           )}
         </div>

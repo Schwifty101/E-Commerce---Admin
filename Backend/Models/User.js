@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const Analytics = mongoose.models.Analytics || require('../Models/Analytics');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -84,4 +85,31 @@ userSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-module.exports = mongoose.model('User', userSchema); 
+// Add middleware to update analytics after user changes
+userSchema.post('save', async function(doc) {
+    try {
+        await Analytics.updateUserMetrics();
+        
+        // Log new user registrations
+        if (doc.isNew) {
+            await Analytics.logUserActivity(
+                doc._id,
+                'user_registered',
+                null
+            );
+        }
+    } catch (error) {
+        console.error('Error updating user analytics:', error);
+    }
+});
+
+// Add middleware for bulk operations
+userSchema.post('updateMany', async function() {
+    try {
+        await Analytics.updateUserMetrics();
+    } catch (error) {
+        console.error('Error updating analytics after bulk update:', error);
+    }
+});
+
+module.exports = mongoose.models.User || mongoose.model('User', userSchema); 

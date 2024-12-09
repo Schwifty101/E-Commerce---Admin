@@ -1,86 +1,92 @@
 import { DollarSign, ShoppingBag, Users, Package } from 'lucide-react';
 import StatsCard from '../components/dashboard/StatsCard';
-import RecentOrders from '../components/dashboard/RecentOrders';
-
-const mockOrders = [
-  {
-    id: '1',
-    customerName: 'Soban',
-    date: '2024-03-14',
-    status: 'pending',
-    total: 120.75,
-    items: [
-      { productId: '101', name: 'Laptop', quantity: 1, price: 120.75 }
-    ],
-    shippingAddress: '123 Main Street, Islamabad',
-    paymentStatus: 'pending',
-  },
-  {
-    id: '2',
-    customerName: 'Jane Smith',
-    date: '2024-03-14',
-    status: 'processing',
-    total: 234.50,
-    items: [
-      { productId: '102', name: 'Phone', quantity: 1, price: 234.50 }
-    ],
-    shippingAddress: '456 Elm Street, Karachi',
-    paymentStatus: 'paid',
-  },
-  {
-    id: '3',
-    customerName: 'Mike Johnson',
-    date: '2024-03-14',
-    status: 'shipped',
-    total: 89.99,
-    items: [
-      { productId: '103', name: 'Headphones', quantity: 1, price: 89.99 }
-    ],
-    shippingAddress: '789 Pine Street, Lahore',
-    paymentStatus: 'paid',
-  },
-];
+import TopProducts from '../components/analytics/TopProducts';
+import { useEffect, useState } from 'react';
+import { analyticsService } from '../services/analyticsService';
 
 const Dashboard = () => {
-  return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <StatsCard
-          title="Total Sales"
-          value="$12,345"
-          icon={DollarSign}
-          trend={12}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Total Orders"
-          value="156"
-          icon={ShoppingBag}
-          trend={8}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Total Customers"
-          value="1,245"
-          icon={Users}
-          trend={15}
-          trendLabel="vs last month"
-        />
-        <StatsCard
-          title="Products in Stock"
-          value="534"
-          icon={Package}
-          trend={-3}
-          trendLabel="vs last month"
-        />
-      </div>
+  const [revenueData, setRevenueData] = useState({ totalRevenue: 0, growth: 0 });
+  const [overviewStats, setOverviewStats] = useState({ totalOrders: 0, totalCustomers: 0, totalProducts: 0 });
+  const [growthData, setGrowthData] = useState({ revenue: 0, users: 0, orders: 0, orderValue: 0 });
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <RecentOrders orders={mockOrders} />
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      try {
+        const data = await analyticsService.getRevenueAnalytics({ period: '30days' });
+        setRevenueData(data.summary);
+      } catch (error) {
+        console.error('Failed to fetch revenue data:', error);
+      }
+    };
+
+    fetchRevenueData();
+  }, []);
+
+  useEffect(() => {
+    const fetchOverviewStats = async () => {
+      try {
+        const data = await analyticsService.getOverviewStats();
+        setOverviewStats(data.stats);
+        setGrowthData(data.growth);
+      } catch (error) {
+        console.error('Failed to fetch overview stats:', error);
+      }
+    };
+
+    fetchOverviewStats();
+  }, []);
+
+  const formatNumber = (number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="text-gray-600 mt-1">Track your business performance and growth</p>
+          </div>
+        </div>
+
+        {/* Stats Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatsCard
+            title="Total Sales"
+            value={formatNumber(revenueData.totalRevenue)}
+            icon={DollarSign}
+            trend={Math.floor(growthData.revenue)}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Total Orders"
+            value={overviewStats.totalOrders}
+            icon={ShoppingBag}
+            trend={growthData.orders}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Total Customers"
+            value={overviewStats.totalCustomers}
+            icon={Users}
+            trend={growthData.users}
+            trendLabel="vs last month"
+          />
+          <StatsCard
+            title="Products in Stock"
+            value={overviewStats.totalProducts}
+            icon={Package}
+            trend={growthData.orderValue}
+            trendLabel="vs last month"
+          />
+        </div>
+
+        {/* Top Products Section */}
+        <div className="grid grid-cols-1 gap-6">
+          <TopProducts />
+        </div>
       </div>
     </div>
   );

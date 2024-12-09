@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Analytics = mongoose.models.Analytics || require('./Analytics');
 
 const orderItemSchema = new mongoose.Schema({
   productId: {
@@ -111,6 +112,34 @@ orderSchema.index({ vendor: 1, createdAt: -1 });
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ paymentStatus: 1, createdAt: -1 });
 
+// Add middleware to update analytics after order save
+orderSchema.post('save', async function(doc) {
+    try {
+        // Update analytics with the new/updated order
+        await Analytics.updateOrderMetrics(doc);
+        
+        // If this is a status change, log it in system logs
+        if (doc.isModified('status')) {
+            await Analytics.logUserActivity(
+                doc.customer,
+                `order_${doc.status}`,
+                null // IP address not available in middleware
+            );
+        }
+    } catch (error) {
+        console.error('Error updating analytics:', error);
+    }
+});
+
+// Add middleware to update analytics for bulk operations
+orderSchema.post('updateMany', async function(result) {
+    try {
+        await Analytics.updateOrderMetrics();
+    } catch (error) {
+        console.error('Error updating analytics after bulk update:', error);
+    }
+});
+
 // Add method to get order analytics
 orderSchema.statics.getAnalytics = async function(startDate, endDate) {
     return this.aggregate([
@@ -135,4 +164,5 @@ orderSchema.statics.getAnalytics = async function(startDate, endDate) {
     ]);
 };
 
-module.exports = mongoose.model('Order', orderSchema); 
+// Export the model only if it hasn't been compiled yet
+module.exports = mongoose.models.Order || mongoose.model('Order', orderSchema); 

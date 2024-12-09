@@ -2,23 +2,46 @@ import React, { useState } from 'react';
 import Table from '../common/Table';
 import { format } from 'date-fns';
 
-const OrderList = ({ orders, onOrderClick, currentPage, totalPages, onPageChange, loading }) => {
+const OrderList = ({ orders, onOrderClick, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 10;
 
+  // Filter orders based on search term and status
   const filteredOrders = orders?.filter(order =>
-    (!searchTerm || 
+    (!searchTerm ||
       (order?.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       order?.orderNumber?.toString().toLowerCase().includes(searchTerm.toLowerCase()))) &&
+        order?.orderNumber?.toString().toLowerCase().includes(searchTerm.toLowerCase()))) &&
     (!statusFilter || order?.status === statusFilter)
   ) || [];
 
-  const handlePageChange = (newPage) => {
-    setSearchTerm('');
-    setStatusFilter('');
-    onPageChange(newPage);
+  // Calculate pagination
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
+  // Add these handler functions
+  const handlePrevious = () => {
+    handlePageChange(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    handlePageChange(currentPage + 1);
+  };
+
+  // Add these calculations for the results display
+  const startResult = indexOfFirstOrder + 1;
+  const endResult = Math.min(indexOfLastOrder, filteredOrders.length);
+  const totalResults = filteredOrders.length;
+
+  // Define table columns
   const columns = React.useMemo(
     () => [
       {
@@ -120,28 +143,43 @@ const OrderList = ({ orders, onOrderClick, currentPage, totalPages, onPageChange
         <div className="text-center py-4">Loading...</div>
       ) : (
         <>
-          <Table 
-            columns={columns} 
-            data={filteredOrders} 
+          <Table
+            columns={columns}
+            data={currentOrders}
             onRowClick={onOrderClick}
           />
 
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-700">
-              Showing page {currentPage} of {totalPages}
-            </p>
-            <div className="space-x-2">
+          {/* Updated pagination section */}
+          <div className="flex justify-between items-center px-2">
+            <div className="text-sm text-gray-700">
+              Showing {startResult} to {endResult} of {totalResults} results
+            </div>
+            
+            <div className="flex items-center space-x-2">
               <button
-                onClick={() => handlePageChange(currentPage - 1)}
+                onClick={handlePrevious}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border rounded-md disabled:opacity-50"
+                className={`px-4 py-2 text-sm font-medium rounded-md
+                  ${currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
               >
                 Previous
               </button>
+              
+              <span className="text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              
               <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded-md disabled:opacity-50"
+                onClick={handleNext}
+                disabled={currentPage >= totalPages}
+                className={`px-4 py-2 text-sm font-medium rounded-md
+                  ${currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
               >
                 Next
               </button>

@@ -37,7 +37,7 @@ router.get('/top-products',
 );
 
 // Export Data
-router.post('/export',
+router.get('/export',
     isAuthenticated,
     isAdmin,
     validatePeriod,

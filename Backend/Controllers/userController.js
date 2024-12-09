@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../Models/User');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { createExcelWorkbook } = require('../utils/excel');
 const { createUserSchema } = require('../utils/validation');
@@ -173,7 +173,7 @@ const verifySeller = async (req, res) => {
     const seller = await User.findByIdAndUpdate(
       req.params.id,
       {
-        verificationStatus: approved ? 'approved' : 'rejected',
+        verificationStatus: approved ? 'active' : 'banned',
         'businessDetails.verified': approved
       },
       { new: true }

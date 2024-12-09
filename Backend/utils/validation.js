@@ -163,6 +163,105 @@ const exportRequestSchema = Joi.object({
   'string.valid': 'Invalid export type specified'
 });
 
+// Analytics period validation
+const analyticsPeriodSchema = Joi.object({
+    period: Joi.string()
+        .valid('24hours', '7days', '30days', '90days', '12months')
+        .required()
+        .messages({
+            'any.required': 'Time period is required',
+            'string.valid': 'Invalid time period specified'
+        }),
+    dataType: Joi.string()
+        .valid('all', 'revenue', 'orders', 'users', 'products')
+        .default('all')
+        .messages({
+            'string.valid': 'Invalid data type specified'
+        }),
+    groupBy: Joi.string()
+        .valid('hour', 'day', 'week', 'month')
+        .default('day')
+        .messages({
+            'string.valid': 'Invalid grouping specified'
+        }),
+    orderStatus: Joi.string()
+        .valid('all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned')
+        .default('all')
+        .messages({
+            'string.valid': 'Invalid order status specified'
+        })
+});
+
+// Analytics export validation
+const analyticsExportSchema = Joi.object({
+    period: Joi.string()
+        .valid('24hours', '7days', '30days', '90days', '12months')
+        .required(),
+    format: Joi.string()
+        .valid('csv', 'excel', 'pdf')
+        .default('csv'),
+    includeMetrics: Joi.object({
+        revenue: Joi.boolean().default(true),
+        orders: Joi.boolean().default(true),
+        users: Joi.boolean().default(true),
+        products: Joi.boolean().default(true)
+    }).default(),
+    filters: Joi.object({
+        orderStatus: Joi.string()
+            .valid('all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned')
+            .default('all'),
+        userType: Joi.string()
+            .valid('all', 'buyer', 'seller')
+            .default('all'),
+        productCategory: Joi.string().optional()
+    }).default()
+}).messages({
+    'any.required': 'Export configuration is required',
+    'object.base': 'Invalid export configuration'
+});
+
+// Analytics dashboard filters validation
+const analyticsDashboardSchema = Joi.object({
+    timeRange: Joi.object({
+        start: Joi.date().required(),
+        end: Joi.date().min(Joi.ref('start')).required()
+    }).required(),
+    metrics: Joi.array()
+        .items(Joi.string().valid(
+            'revenue',
+            'orders',
+            'users',
+            'products',
+            'topProducts',
+            'userActivity'
+        ))
+        .default(['revenue', 'orders', 'users', 'products']),
+    comparison: Joi.boolean().default(false)
+}).messages({
+    'date.min': 'End date must be after start date',
+    'any.required': 'Time range is required'
+});
+
+// Analytics top products validation
+const topProductsSchema = Joi.object({
+    period: Joi.string()
+        .valid('24hours', '7days', '30days', '90days', '12months')
+        .required(),
+    limit: Joi.number()
+        .integer()
+        .min(1)
+        .max(100)
+        .default(10),
+    sortBy: Joi.string()
+        .valid('sales', 'revenue')
+        .default('revenue'),
+    category: Joi.string().optional()
+}).messages({
+    'number.base': 'Limit must be a number',
+    'number.min': 'Limit must be at least 1',
+    'number.max': 'Limit cannot exceed 100'
+});
+
 module.exports = {
   loginSchema,
   createUserSchema,
@@ -173,5 +272,9 @@ module.exports = {
   returnActionSchema,
   dateRangeSchema,
   periodSchema,
-  exportRequestSchema
+  exportRequestSchema,
+  analyticsPeriodSchema,
+  analyticsExportSchema,
+  analyticsDashboardSchema,
+  topProductsSchema
 };
